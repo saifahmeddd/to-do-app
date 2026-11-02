@@ -13,7 +13,9 @@ The frontend never accesses Firebase or Firestore directly.
 
 ## Run locally
 
-Start the Python API on `http://127.0.0.1:8000`, then run:
+Start the Python API on `http://127.0.0.1:8000`. Set
+`BACKEND_PROXY_TARGET` in `frontend/.env` if it runs at another address; copy
+the value from `.env.example` for the default local setup. Then run:
 
 ```bash
 cd frontend
@@ -24,7 +26,8 @@ npm run dev
 Open `http://127.0.0.1:5173`.
 
 Vite proxies `/auth` and `/tasks` requests to the Python server during local
-development.
+development. This proxy target is server-side Vite configuration and is not
+exposed to browser code.
 
 ## Important files
 

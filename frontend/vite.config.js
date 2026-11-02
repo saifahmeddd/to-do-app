@@ -1,16 +1,21 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const backendTarget = env.BACKEND_PROXY_TARGET || 'http://127.0.0.1:8000';
 
-  server: {
-    host: '127.0.0.1',
-    port: 5173,
-    proxy: {
-      // Forward frontend API paths to the local Python server.
-      '/auth': 'http://127.0.0.1:8000',
-      '/tasks': 'http://127.0.0.1:8000',
+  return {
+    plugins: [react()],
+
+    server: {
+      host: '127.0.0.1',
+      port: 5173,
+      proxy: {
+        // Forward frontend API paths to the configured Python server.
+        '/auth': backendTarget,
+        '/tasks': backendTarget,
+      },
     },
-  },
+  };
 });
