@@ -16,22 +16,23 @@ const initialState = {
   error: '',
 };
 
-function orderTasks(tasks) {
-  // Copy before sorting so the original Redux array is never mutated.
-  return [...tasks].sort((left, right) => {
-    const completionDifference = Number(Boolean(left.completed_at)) - Number(Boolean(right.completed_at));
-    if (completionDifference !== 0) return completionDifference;
-
-    return left.created_at.localeCompare(right.created_at) || left.id.localeCompare(right.id);
-  });
-}
-
 function errorMessage(error) {
   if (error instanceof ApiError && error.status === 401) {
     return 'Your session is invalid or expired. Log in again.';
   }
 
   return error.message || 'Something went wrong.';
+}
+
+function createApiThunk(type, request) {
+  return createAsyncThunk(type, async (argument, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.session.id_token;
+      return await request(argument, token);
+    } catch (error) {
+      return rejectWithValue(errorMessage(error));
+    }
+  });
 }
 
 export const loadTasks = createAsyncThunk(
@@ -49,56 +50,31 @@ export const loadTasks = createAsyncThunk(
   },
 );
 
-export const createTask = createAsyncThunk(
+export const createTask = createApiThunk(
   'tasks/createTask',
-  async (title, { getState, rejectWithValue }) => {
-    try {
-      const token = getState().auth.session.id_token;
-      return await createTaskRequest(title, token);
-    } catch (error) {
-      return rejectWithValue(errorMessage(error));
-    }
-  },
+  (title, token) => createTaskRequest(title, token),
 );
 
-export const completeTask = createAsyncThunk(
+export const completeTask = createApiThunk(
   'tasks/completeTask',
-  async (id, { getState, rejectWithValue }) => {
-    try {
-      return await completeTaskRequest(id, getState().auth.session.id_token);
-    } catch (error) {
-      return rejectWithValue(errorMessage(error));
-    }
-  },
+  (id, token) => completeTaskRequest(id, token),
 );
 
-export const renameTask = createAsyncThunk(
+export const renameTask = createApiThunk(
   'tasks/renameTask',
-  async ({ id, title }, { getState, rejectWithValue }) => {
-    try {
-      return await renameTaskRequest(id, title, getState().auth.session.id_token);
-    } catch (error) {
-      return rejectWithValue(errorMessage(error));
-    }
-  },
+  ({ id, title }, token) => renameTaskRequest(id, title, token),
 );
 
-export const deleteTask = createAsyncThunk(
+export const deleteTask = createApiThunk(
   'tasks/deleteTask',
-  async (id, { getState, rejectWithValue }) => {
-    try {
-      await deleteTaskRequest(id, getState().auth.session.id_token);
-      return id;
-    } catch (error) {
-      return rejectWithValue(errorMessage(error));
-    }
+  async (id, token) => {
+    await deleteTaskRequest(id, token);
+    return id;
   },
 );
 
 function replaceTask(state, updatedTask) {
-  state.items = orderTasks(
-    state.items.map(task => task.id === updatedTask.id ? updatedTask : task),
-  );
+  state.items = state.items.map(task => task.id === updatedTask.id ? updatedTask : task);
 }
 
 function taskUpdateRejected(state, action) {
@@ -111,9 +87,7 @@ const tasksSlice = createSlice({
   name: 'tasks',
   initialState,
   reducers: {
-    tasksCleared() {
-      return initialState;
-    },
+    tasksCleared: () => initialState,
   },
   extraReducers: builder => {
     builder
@@ -123,7 +97,7 @@ const tasksSlice = createSlice({
       })
       .addCase(loadTasks.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.items = orderTasks(action.payload);
+        state.items = action.payload;
       })
       .addCase(loadTasks.rejected, (state, action) => {
         state.isLoading = false;
@@ -138,7 +112,7 @@ const tasksSlice = createSlice({
       })
       .addCase(createTask.fulfilled, (state, action) => {
         state.isCreating = false;
-        state.items = orderTasks([...state.items, action.payload]);
+        state.items.push(action.payload);
       })
       .addCase(createTask.rejected, (state, action) => {
         state.isCreating = false;

@@ -262,7 +262,7 @@ ownership and domain rules remain the responsibility of the Python backend.
 - Redux Toolkit uses Immer, so reducer mutation-style syntax still produces
   immutable state updates.
 - `busyTaskId` identifies the task currently being updated.
-- Unfinished tasks are ordered before completed tasks.
+- Loaded tasks keep the order returned by the backend; newly created tasks are appended.
 - `unwrap()` lets forms clear or close only after a successful task request.
 - The Redux store is currently memory-only, so refreshing clears the session,
   tasks, and selected theme.
