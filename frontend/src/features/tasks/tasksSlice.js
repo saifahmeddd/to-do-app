@@ -24,17 +24,6 @@ function errorMessage(error) {
   return error.message || 'Something went wrong.';
 }
 
-function createApiThunk(type, request) {
-  return createAsyncThunk(type, async (argument, { getState, rejectWithValue }) => {
-    try {
-      const token = getState().auth.session.id_token;
-      return await request(argument, token);
-    } catch (error) {
-      return rejectWithValue(errorMessage(error));
-    }
-  });
-}
-
 export const loadTasks = createAsyncThunk(
   'tasks/loadTasks',
   async (_, { getState, rejectWithValue, signal }) => {
@@ -50,26 +39,52 @@ export const loadTasks = createAsyncThunk(
   },
 );
 
-export const createTask = createApiThunk(
+export const createTask = createAsyncThunk(
   'tasks/createTask',
-  (title, token) => createTaskRequest(title, token),
+  async (title, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.session.id_token;
+      return await createTaskRequest(title, token);
+    } catch (error) {
+      return rejectWithValue(errorMessage(error));
+    }
+  },
 );
 
-export const completeTask = createApiThunk(
+export const completeTask = createAsyncThunk(
   'tasks/completeTask',
-  (id, token) => completeTaskRequest(id, token),
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.session.id_token;
+      return await completeTaskRequest(id, token);
+    } catch (error) {
+      return rejectWithValue(errorMessage(error));
+    }
+  },
 );
 
-export const renameTask = createApiThunk(
+export const renameTask = createAsyncThunk(
   'tasks/renameTask',
-  ({ id, title }, token) => renameTaskRequest(id, title, token),
+  async ({ id, title }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.session.id_token;
+      return await renameTaskRequest(id, title, token);
+    } catch (error) {
+      return rejectWithValue(errorMessage(error));
+    }
+  },
 );
 
-export const deleteTask = createApiThunk(
+export const deleteTask = createAsyncThunk(
   'tasks/deleteTask',
-  async (id, token) => {
-    await deleteTaskRequest(id, token);
-    return id;
+  async (id, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().auth.session.id_token;
+      await deleteTaskRequest(id, token);
+      return id;
+    } catch (error) {
+      return rejectWithValue(errorMessage(error));
+    }
   },
 );
 

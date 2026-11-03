@@ -7,33 +7,24 @@ export class ApiError extends Error {
 }
 
 async function request(path, { method = 'GET', token, body, signal } = {}) {
-  const headers = {};
-
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  // Protected routes receive the token in the header, never the URL or body.
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  const headers = {
+    ...(body !== undefined && { 'Content-Type': 'application/json' }),
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
 
   let response;
   try {
     response = await fetch(path, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
       signal,
     });
   } catch (error) {
     // Preserve intentional cancellations so App can ignore them.
     if (error.name === 'AbortError') throw error;
 
-    throw new ApiError(
-      'Could not reach the API. Make sure the Python server is running.',
-      0,
-    );
+    throw new ApiError('Could not reach the API. Make sure the Python server is running.', 0);
   }
 
   // Empty or non-JSON responses become an empty object instead of failing during parsing.
