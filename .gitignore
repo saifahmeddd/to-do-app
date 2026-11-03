@@ -8,3 +8,4 @@ service-account*.json
 *firebase-adminsdk*.json
 docs/
 *.zip
+.vscode/
