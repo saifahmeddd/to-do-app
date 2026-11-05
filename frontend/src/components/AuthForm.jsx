@@ -12,6 +12,7 @@ export default function AuthForm({ mode, isSubmitting, error, onSubmit, onModeCh
   }
 
   return (
+    // Collects login or registration details and displays request feedback.
     <section className="auth-card" aria-labelledby="auth-title">
       <div className="eyebrow">React + Onion Architecture</div>
       <h1 id="auth-title">{isRegistering ? 'Create an account' : 'Welcome back'}</h1>

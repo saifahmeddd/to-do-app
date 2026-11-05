@@ -16,6 +16,7 @@ export default function TaskForm({ isSubmitting, onCreate }) {
   }
 
   return (
+    // Collects a new task title and shows whether creation is in progress.
     <form className="task-form" onSubmit={handleSubmit}>
       <label className="sr-only" htmlFor="new-task-title">New task title</label>
       <input

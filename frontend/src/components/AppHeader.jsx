@@ -6,6 +6,7 @@ export default function AppHeader({ email, pendingCount, onLogout }) {
   const theme = useSelector(selectTheme);
 
   return (
+    // Shows the signed-in user's summary and global theme/logout controls.
     <header className="app-header">
       <div>
         <div className="eyebrow">DDD + React</div>

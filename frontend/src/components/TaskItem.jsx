@@ -26,6 +26,7 @@ export default function TaskItem({ task, isBusy, onComplete, onRename, onDelete 
   }
 
   return (
+    // Shows one task, switching between its details and edit form.
     <li className={`task-item ${isCompleted ? 'completed' : ''}`}>
       <div className="task-content">
         <span className="status-dot" aria-hidden="true" />
