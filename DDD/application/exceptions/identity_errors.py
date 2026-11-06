@@ -1,13 +1,9 @@
-"""Safe application failures for credential-based identity use cases."""
+"""Safe application failures for password-authentication use cases."""
 
 
 class RegistrationFailed(Exception):
-    """The identity provider rejected a registration attempt."""
+    """Registration conflicts with an account already in this database."""
 
 
 class LoginFailed(Exception):
-    """The identity provider rejected a login attempt."""
-
-
-class IdentityProviderUnavailable(Exception):
-    """Authentication could not run because its external provider failed."""
+    """The account is missing or its password does not match."""

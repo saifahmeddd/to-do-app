@@ -7,7 +7,6 @@ from urllib.parse import urlsplit
 
 from application.exceptions.authentication_failed import AuthenticationFailed
 from application.exceptions.identity_errors import (
-    IdentityProviderUnavailable,
     LoginFailed,
     RegistrationFailed,
 )
@@ -52,9 +51,7 @@ def make_server(
             except LoginFailed as exc:
                 status, payload = 401, error_view(str(exc))
             except RegistrationFailed as exc:
-                status, payload = 400, error_view(str(exc))
-            except IdentityProviderUnavailable as exc:
-                status, payload = 502, error_view(str(exc))
+                status, payload = 409, error_view(str(exc))
             except (
                 InvalidRequest,
                 InvalidTask,

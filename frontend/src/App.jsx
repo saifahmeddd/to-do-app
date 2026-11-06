@@ -47,7 +47,7 @@ export default function App() {
   const theme = useSelector(selectTheme);
 
   // javascript's optional chaining
-  const idToken = session?.id_token;
+  const accessToken = session?.access_token;
 
   // side effect to set the theme on the document element
   useEffect(() => {
@@ -60,12 +60,12 @@ export default function App() {
 
   // Reload tasks for a new session and cancel the request during effect cleanup.
   useEffect(() => {
-    if (!idToken) return;
+    if (!accessToken) return;
 
     const request = dispatch(loadTasks());
 
     return () => request.abort();
-  }, [dispatch, idToken]);
+  }, [dispatch, accessToken]);
 
   const handleAuthentication = credentials => dispatch(authenticate(credentials));
   const handleModeChange = mode => dispatch(modeChanged(mode));

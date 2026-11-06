@@ -28,7 +28,7 @@ export const loadTasks = createAsyncThunk(
   'tasks/loadTasks',
   async (_, { getState, rejectWithValue, signal }) => {
     try {
-      const token = getState().auth.session.id_token;
+      const token = getState().auth.session.access_token;
       const data = await listTasks(token, signal);
       return data.tasks;
     } catch (error) {
@@ -43,7 +43,7 @@ export const createTask = createAsyncThunk(
   'tasks/createTask',
   async (title, { getState, rejectWithValue }) => {
     try {
-      const token = getState().auth.session.id_token;
+      const token = getState().auth.session.access_token;
       return await createTaskRequest(title, token);
     } catch (error) {
       return rejectWithValue(errorMessage(error));
@@ -55,7 +55,7 @@ export const completeTask = createAsyncThunk(
   'tasks/completeTask',
   async (id, { getState, rejectWithValue }) => {
     try {
-      const token = getState().auth.session.id_token;
+      const token = getState().auth.session.access_token;
       return await completeTaskRequest(id, token);
     } catch (error) {
       return rejectWithValue(errorMessage(error));
@@ -67,7 +67,7 @@ export const renameTask = createAsyncThunk(
   'tasks/renameTask',
   async ({ id, title }, { getState, rejectWithValue }) => {
     try {
-      const token = getState().auth.session.id_token;
+      const token = getState().auth.session.access_token;
       return await renameTaskRequest(id, title, token);
     } catch (error) {
       return rejectWithValue(errorMessage(error));
@@ -79,7 +79,7 @@ export const deleteTask = createAsyncThunk(
   'tasks/deleteTask',
   async (id, { getState, rejectWithValue }) => {
     try {
-      const token = getState().auth.session.id_token;
+      const token = getState().auth.session.access_token;
       await deleteTaskRequest(id, token);
       return id;
     } catch (error) {

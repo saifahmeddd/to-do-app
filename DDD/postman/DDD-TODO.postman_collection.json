@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7f0710e7-edd5-4b24-91e4-ddd70d0a1171",
     "name": "DDD TODO API - DDD authentication and tasks",
-    "description": "Runs registration and login through the local DDD auth use cases, then applies the Firebase ID token to owner-scoped task requests.",
+    "description": "Runs local registration and login, then applies the database-scoped JWT to owner-scoped task requests.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -10,7 +10,7 @@
     "bearer": [
       {
         "key": "token",
-        "value": "{{firebase_id_token}}",
+        "value": "{{access_token}}",
         "type": "string"
       }
     ]
@@ -23,15 +23,15 @@
         "exec": [
           "const explicitAuthRequests = ['Register current user', 'Login current user'];",
           "if (!explicitAuthRequests.includes(pm.info.requestName)) {",
-          "const required = ['base_url', 'firebase_email', 'firebase_password'];",
+          "const required = ['base_url', 'user_email', 'user_password'];",
           "const missing = required.filter(name => !pm.environment.get(name));",
           "if (missing.length) {",
           "  throw new Error(`Set these variables in the selected Postman environment: ${missing.join(', ')}`);",
           "}",
           "",
           "const baseUrl = pm.environment.get('base_url');",
-          "const email = pm.environment.get('firebase_email');",
-          "const password = pm.environment.get('firebase_password');",
+          "const email = pm.environment.get('user_email');",
+          "const password = pm.environment.get('user_password');",
           "",
           "pm.sendRequest({",
           "  url: `${baseUrl}/auth/login`,",
@@ -43,20 +43,19 @@
           "  }",
           "}, (error, response) => {",
           "  if (error) {",
-          "    throw new Error(`Firebase login request failed: ${error.message || error}`);",
+          "    throw new Error(`Login request failed: ${error.message || error}`);",
           "  }",
           "",
           "  let data;",
           "  try { data = response.json(); } catch (_) { data = {}; }",
-          "  if (response.code !== 200 || !data.id_token) {",
+          "  if (response.code !== 200 || !data.access_token) {",
           "    const reason = data.error?.message || `${response.code} ${response.status}`;",
-          "    throw new Error(`Firebase login failed: ${reason}`);",
+          "    throw new Error(`Login failed: ${reason}`);",
           "  }",
           "",
-          "  pm.environment.set('firebase_id_token', data.id_token);",
-          "  pm.environment.set('firebase_refresh_token', data.refresh_token || '');",
-          "  pm.environment.set('firebase_uid', data.user_id || '');",
-          "  pm.request.headers.upsert({ key: 'Authorization', value: `Bearer ${data.id_token}` });",
+          "  pm.environment.set('access_token', data.access_token);",
+          "  pm.environment.set('user_id', data.user_id || '');",
+          "  pm.request.headers.upsert({ key: 'Authorization', value: `Bearer ${data.access_token}` });",
           "});",
           "}"
         ]
@@ -76,10 +75,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "const data = pm.response.json();",
-                  "pm.test('DDD register use case created the Firebase user', () => pm.response.to.have.status(201));",
-                  "if (data.id_token) pm.environment.set('firebase_id_token', data.id_token);",
-                  "if (data.refresh_token) pm.environment.set('firebase_refresh_token', data.refresh_token);",
-                  "if (data.user_id) pm.environment.set('firebase_uid', data.user_id);"
+                  "pm.test('Local account registered', () => pm.response.to.have.status(201));",
+                  "if (data.access_token) pm.environment.set('access_token', data.access_token);",
+                  "if (data.user_id) pm.environment.set('user_id', data.user_id);"
                 ]
               }
             }
@@ -90,7 +88,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{firebase_email}}\",\n  \"password\": \"{{firebase_password}}\"\n}",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{base_url}}/auth/register"
@@ -105,10 +103,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "const data = pm.response.json();",
-                  "pm.test('Firebase authenticated the registered user', () => pm.response.to.have.status(200));",
-                  "if (data.id_token) pm.environment.set('firebase_id_token', data.id_token);",
-                  "if (data.refresh_token) pm.environment.set('firebase_refresh_token', data.refresh_token);",
-                  "if (data.user_id) pm.environment.set('firebase_uid', data.user_id);"
+                  "pm.test('Local account login succeeded', () => pm.response.to.have.status(200));",
+                  "if (data.access_token) pm.environment.set('access_token', data.access_token);",
+                  "if (data.user_id) pm.environment.set('user_id', data.user_id);"
                 ]
               }
             }
@@ -119,7 +116,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{firebase_email}}\",\n  \"password\": \"{{firebase_password}}\"\n}",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{base_url}}/auth/login"

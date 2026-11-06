@@ -6,11 +6,7 @@ import threading
 import unittest
 from datetime import datetime, timezone
 
-from application.dtos.auth_dto import (
-    AuthSessionDTO,
-    LoginUserDTO,
-    RegisterUserDTO,
-)
+from application.dtos.auth_dto import UserCredentialDTO
 from application.interfaces.authentication import AuthenticatedUser
 from application.services.auth_service import AuthService
 from application.services.task_service import TaskService
@@ -48,37 +44,50 @@ class TestTokenVerifier:
         return AuthenticatedUser(UserId(f"user-{token}"))
 
 
-class FakeIdentityProvider:
-    """Return stable sessions while recording application DTO boundaries."""
+class FakeUserRepository:
+    """Keep test accounts in memory behind the application repository port."""
 
     def __init__(self):
-        self.registered_command = None
-        self.login_command = None
+        self.users = {}
 
-    def register(self, command: RegisterUserDTO) -> AuthSessionDTO:
-        self.registered_command = command
-        return self._session(command.email, "registered-token")
+    def create_user(self, email, email_key, password_hash, created_at):
+        user = UserCredentialDTO("local-user-1", email, password_hash)
+        self.users[email_key] = user
+        return user
 
-    def login(self, command: LoginUserDTO) -> AuthSessionDTO:
-        self.login_command = command
-        return self._session(command.email, "login-token")
+    def get_by_email_key(self, email_key):
+        return self.users.get(email_key)
 
-    @staticmethod
-    def _session(email: str, token: str) -> AuthSessionDTO:
-        return AuthSessionDTO(
-            user_id="firebase-user-1",
-            email=email,
-            id_token=token,
-            refresh_token="refresh-token",
-            expires_in=3600,
-        )
+    def record_login(self, email_key, logged_in_at):
+        pass
+
+
+class FakePasswordHasher:
+    def hash(self, password):
+        return f"hashed:{password}"
+
+    def verify(self, password_hash, password):
+        return password_hash == f"hashed:{password}"
+
+
+class FakeTokenIssuer:
+    expires_in = 3600
+
+    def issue(self, user_id, email):
+        return f"token-for-{user_id}"
 
 
 class HttpServerTests(unittest.TestCase):
     """Prove HTTP parsing, authentication, routing, and JSON responses together."""
 
     def setUp(self):
-        self.identity_provider = FakeIdentityProvider()
+        self.user_repository = FakeUserRepository()
+        auth_service = AuthService(
+            self.user_repository,
+            FakePasswordHasher(),
+            FakeTokenIssuer(),
+            FixedClock(),
+        )
         service = TaskService(
             FirestoreTaskRepository(FakeFirestoreClient()),
             FixedClock(),
@@ -87,7 +96,7 @@ class HttpServerTests(unittest.TestCase):
             TaskOrdering(),
         )
         routes = ApiRoutes(
-            AuthRoutes(AuthController(AuthService(self.identity_provider))),
+            AuthRoutes(AuthController(auth_service)),
             TaskRoutes(TaskController(service)),
         )
         self.server = make_server("127.0.0.1", 0, routes, TestTokenVerifier())
@@ -139,21 +148,17 @@ class HttpServerTests(unittest.TestCase):
             "POST", "/auth/register", credentials, token=None
         )
         self.assertEqual(register_status, 201)
-        self.assertEqual(registered["id_token"], "registered-token")
-        self.assertEqual(
-            self.identity_provider.registered_command,
-            RegisterUserDTO(**credentials),
+        self.assertEqual(registered["access_token"], "token-for-local-user-1")
+        self.assertIn(
+            "demo@example.com",
+            [user.email for user in self.user_repository.users.values()],
         )
 
         login_status, logged_in = self.request(
             "POST", "/auth/login", credentials, token=None
         )
         self.assertEqual(login_status, 200)
-        self.assertEqual(logged_in["id_token"], "login-token")
-        self.assertEqual(
-            self.identity_provider.login_command,
-            LoginUserDTO(**credentials),
-        )
+        self.assertEqual(logged_in["access_token"], "token-for-local-user-1")
 
     def test_auth_input_validation_runs_without_a_bearer_token(self):
         status, payload = self.request(

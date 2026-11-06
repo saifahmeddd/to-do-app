@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { ApiError, login, register } from '../../api/client.js';
+import { login, register } from '../../api/client.js';
 
 const initialState = {
   mode: 'login',
@@ -9,10 +9,6 @@ const initialState = {
 };
 
 function errorMessage(error) {
-  if (error instanceof ApiError && error.status === 401) {
-    return 'Your session is invalid or expired. Log in again.';
-  }
-
   return error.message || 'Something went wrong.';
 }
 
@@ -27,8 +23,9 @@ export const authenticate = createAsyncThunk(
       const session = await request(credentials);
 
       return {
+        user_id: session.user_id,
         email: session.email,
-        id_token: session.id_token,
+        access_token: session.access_token,
       };
     } catch (error) {
       // rejectWithValue places a readable API error in the rejected action payload.

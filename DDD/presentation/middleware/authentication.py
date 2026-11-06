@@ -14,6 +14,6 @@ def authenticate(
     scheme, separator, token = authorization.partition(" ")
     if not separator or scheme.lower() != "bearer" or not token.strip():
         raise AuthenticationFailed(
-            "A valid Authorization: Bearer <Firebase ID token> header is required."
+            "A valid Authorization: Bearer <access token> header is required."
         )
     return verifier.verify(token.strip())

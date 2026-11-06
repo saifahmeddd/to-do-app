@@ -1,4 +1,4 @@
-"""Validated Firebase user identity used to scope task ownership."""
+"""Validated authenticated user identity used to scope task ownership."""
 
 from dataclasses import dataclass
 
@@ -7,7 +7,7 @@ from domain.exceptions.task_errors import InvalidUserId
 
 @dataclass(frozen=True)
 class UserId:
-    """Immutable non-empty user identifier issued by Firebase Authentication."""
+    """Immutable non-empty ID from the selected database's user collection."""
 
     value: str
 

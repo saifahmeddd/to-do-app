@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CREDENTIALS_PATH = PROJECT_ROOT / ".secrets" / "firebase-service-account.json"
@@ -11,22 +13,25 @@ DEFAULT_CREDENTIALS_PATH = PROJECT_ROOT / ".secrets" / "firebase-service-account
 
 @dataclass(frozen=True)
 class Settings:
-    """Immutable infrastructure and HTTP configuration for one process."""
+    """Immutable database, JWT, and HTTP configuration for one process."""
 
     firebase_project_id: str | None = None
     firebase_credentials_path: str | None = None
-    firebase_web_api_key: str | None = None
     task_database: str = "firestore"
     task_collection: str = "tasks"
+    user_collection: str = "users"
     mongodb_uri: str | None = None
     mongodb_database: str = "todo"
     postgres_dsn: str | None = None
+    jwt_secret: str = ""
+    jwt_expires_minutes: int = 60
     host: str = "127.0.0.1"
     port: int = 8000
 
     @classmethod
     def from_environment(cls) -> "Settings":
-        """Load settings, preferring explicit credentials over the local key."""
+        """Load local .env settings without overriding exported variables."""
+        load_dotenv(PROJECT_ROOT / ".env", override=False)
         configured_credentials = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         task_database = os.getenv("TASK_DATABASE", "firestore").strip().lower()
         if task_database not in {"firestore", "mongodb", "postgres"}:
@@ -39,12 +44,14 @@ class Settings:
         return cls(
             firebase_project_id=os.getenv("FIREBASE_PROJECT_ID") or None,
             firebase_credentials_path=configured_credentials or local_credentials,
-            firebase_web_api_key=os.getenv("FIREBASE_WEB_API_KEY") or None,
             task_database=task_database,
             task_collection=os.getenv("FIREBASE_TASK_COLLECTION", "tasks"),
+            user_collection=os.getenv("FIREBASE_USER_COLLECTION", "users"),
             mongodb_uri=os.getenv("MONGODB_URI") or None,
             mongodb_database=os.getenv("MONGODB_DATABASE", "todo"),
             postgres_dsn=os.getenv("POSTGRES_DSN") or None,
+            jwt_secret=os.getenv("JWT_SECRET", ""),
+            jwt_expires_minutes=int(os.getenv("JWT_EXPIRES_MINUTES", "60")),
             host=os.getenv("TODO_HOST", "127.0.0.1"),
             port=int(os.getenv("TODO_PORT", "8000")),
         )

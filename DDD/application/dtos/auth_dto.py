@@ -21,10 +21,19 @@ class LoginUserDTO:
 
 @dataclass(frozen=True)
 class AuthSessionDTO:
-    """Primitive Firebase session data returned to an authenticated client."""
+    """Backend-issued access token returned after a successful login."""
 
     user_id: str
     email: str
-    id_token: str
-    refresh_token: str
+    access_token: str
+    token_type: str
     expires_in: int
+
+
+@dataclass(frozen=True)
+class UserCredentialDTO:
+    """User data required internally to verify a login password."""
+
+    user_id: str
+    email: str
+    password_hash: str

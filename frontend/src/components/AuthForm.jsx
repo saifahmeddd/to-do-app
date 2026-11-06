@@ -41,7 +41,8 @@ export default function AuthForm({ mode, isSubmitting, error, onSubmit, onModeCh
             value={password}
             onChange={event => setPassword(event.target.value)}
             autoComplete={isRegistering ? 'new-password' : 'current-password'}
-            minLength={6}
+            minLength={8}
+            maxLength={128}
             required
           />
         </label>

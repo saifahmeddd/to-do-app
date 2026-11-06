@@ -2,4 +2,4 @@
 
 
 class AuthenticationFailed(Exception):
-    """The request did not contain a valid, current Firebase ID token."""
+    """The request did not contain a valid, unexpired access token."""
