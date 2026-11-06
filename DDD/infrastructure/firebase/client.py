@@ -15,8 +15,19 @@ def create_firestore_client(
     Production can use Application Default Credentials. Local development may
     supply an explicit service-account path from the outer configuration layer.
     """
+    from firebase_admin import firestore
+
+    app = initialize_firebase_app(project_id, credentials_path)
+    return firestore.client(app=app)
+
+
+def initialize_firebase_app(
+    project_id: str | None = None,
+    credentials_path: str | None = None,
+):
+    """Initialize Firebase Admin even when Firestore is not the task database."""
     import firebase_admin
-    from firebase_admin import credentials, firestore
+    from firebase_admin import credentials
 
     # Reuse the process-wide default app because Firebase rejects duplicate
     # initialization with the same name.
@@ -28,4 +39,4 @@ def create_firestore_client(
         )
         options = {"projectId": project_id} if project_id else None
         app = firebase_admin.initialize_app(credential, options=options)
-    return firestore.client(app=app)
+    return app
