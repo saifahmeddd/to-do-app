@@ -23,7 +23,11 @@ import {
   selectTasks,
   tasksCleared,
 } from './features/tasks/tasksSlice.js';
-import { selectTheme } from './features/ui/uiSlice.js';
+import {
+  loadActiveDatabase,
+  selectActiveDatabase,
+  selectTheme,
+} from './features/ui/uiSlice.js';
 import AppHeader from './components/AppHeader.jsx';
 import AuthForm from './components/AuthForm.jsx';
 import TaskForm from './components/TaskForm.jsx';
@@ -45,9 +49,14 @@ export default function App() {
   const taskError = useSelector(selectTaskError);
   const pendingCount = useSelector(selectPendingCount);
   const theme = useSelector(selectTheme);
+  const activeDatabase = useSelector(selectActiveDatabase);
 
   // javascript's optional chaining
   const accessToken = session?.access_token;
+
+  useEffect(() => {
+    dispatch(loadActiveDatabase());
+  }, [dispatch]);
 
   // side effect to set the theme on the document element
   useEffect(() => {
@@ -97,6 +106,7 @@ export default function App() {
           mode={authMode}
           isSubmitting={isAuthenticating}
           error={authError}
+          activeDatabase={activeDatabase}
           onSubmit={handleAuthentication}
           onModeChange={handleModeChange}
         />
@@ -108,6 +118,7 @@ export default function App() {
     <main className="app-shell">
       <AppHeader
         email={session.email}
+        database={session.database || activeDatabase}
         pendingCount={pendingCount}
         onLogout={handleLogout}
       />

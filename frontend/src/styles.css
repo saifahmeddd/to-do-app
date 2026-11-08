@@ -160,6 +160,17 @@ p {
   margin-bottom: 0.35rem;
 }
 
+.database-indicator {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  color: #3730a3;
+  background: #eef2ff;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -341,6 +352,11 @@ p {
 :root[data-theme="dark"] .small.secondary {
   color: #e2e8f0;
   background: #334155;
+}
+
+:root[data-theme="dark"] .database-indicator {
+  color: #e0e7ff;
+  background: #3730a3;
 }
 
 :root[data-theme="dark"] .task-form,

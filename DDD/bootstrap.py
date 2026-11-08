@@ -63,7 +63,7 @@ def build_routes(
         SystemClock(),
     )
     auth_routes = AuthRoutes(AuthController(auth_service))
-    return ApiRoutes(auth_routes, task_routes)
+    return ApiRoutes(auth_routes, task_routes, settings.task_database)
 
 
 def build_user_repository(

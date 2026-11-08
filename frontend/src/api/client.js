@@ -45,6 +45,10 @@ export function login(credentials) {
   return request('/auth/login', { method: 'POST', body: credentials });
 }
 
+export function getRuntime() {
+  return request('/runtime');
+}
+
 export function listTasks(token, signal) {
   return request('/tasks', { token, signal });
 }

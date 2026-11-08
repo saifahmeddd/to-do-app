@@ -25,6 +25,7 @@ export const authenticate = createAsyncThunk(
       return {
         user_id: session.user_id,
         email: session.email,
+        database: session.database,
         access_token: session.access_token,
       };
     } catch (error) {

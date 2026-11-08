@@ -25,6 +25,7 @@ class AuthSessionDTO:
 
     user_id: str
     email: str
+    database: str
     access_token: str
     token_type: str
     expires_in: int

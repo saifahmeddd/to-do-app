@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import DatabaseIndicator from './DatabaseIndicator.jsx';
 
-export default function AuthForm({ mode, isSubmitting, error, onSubmit, onModeChange }) {
+export default function AuthForm({ mode, isSubmitting, error, activeDatabase, onSubmit, onModeChange }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -15,10 +16,11 @@ export default function AuthForm({ mode, isSubmitting, error, onSubmit, onModeCh
     // Collects login or registration details and displays request feedback.
     <section className="auth-card" aria-labelledby="auth-title">
       <div className="eyebrow">React + Onion Architecture</div>
+      <DatabaseIndicator database={activeDatabase} />
       <h1 id="auth-title">{isRegistering ? 'Create an account' : 'Welcome back'}</h1>
       <p className="muted">
         {isRegistering
-          ? 'Register with Firebase, then manage your own tasks.'
+          ? 'Create an account, then manage your own tasks.'
           : 'Log in to load the tasks owned by your account.'}
       </p>
 

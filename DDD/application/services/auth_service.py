@@ -62,6 +62,7 @@ class AuthService:
         return AuthSessionDTO(
             user_id=user_id,
             email=email,
+            database=self.tokens.database,
             access_token=self.tokens.issue(user_id, email),
             token_type="Bearer",
             expires_in=self.tokens.expires_in,

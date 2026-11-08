@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
         // Forward frontend API paths to the configured Python server.
         '/auth': backendTarget,
         '/tasks': backendTarget,
+        '/runtime': backendTarget,
       },
     },
   };

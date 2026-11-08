@@ -1,7 +1,8 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { selectTheme, themeToggled } from '../features/ui/uiSlice.js';
+import DatabaseIndicator from './DatabaseIndicator.jsx';
 
-export default function AppHeader({ email, pendingCount, onLogout }) {
+export default function AppHeader({ email, database, pendingCount, onLogout }) {
   const dispatch = useDispatch();
   const theme = useSelector(selectTheme);
 
@@ -14,6 +15,7 @@ export default function AppHeader({ email, pendingCount, onLogout }) {
         <p className="muted">
           Signed in as {email} · {pendingCount} pending
         </p>
+        <DatabaseIndicator database={database} />
       </div>
       <div className="header-actions">
         <button className="secondary" onClick={() => dispatch(themeToggled())}>

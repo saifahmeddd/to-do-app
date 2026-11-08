@@ -71,6 +71,7 @@ class FakePasswordHasher:
 
 
 class FakeTokenIssuer:
+    database = "firestore"
     expires_in = 3600
 
     def issue(self, user_id, email):
@@ -148,6 +149,7 @@ class HttpServerTests(unittest.TestCase):
             "POST", "/auth/register", credentials, token=None
         )
         self.assertEqual(register_status, 201)
+        self.assertEqual(registered["database"], "firestore")
         self.assertEqual(registered["access_token"], "token-for-local-user-1")
         self.assertIn(
             "demo@example.com",
