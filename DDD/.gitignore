@@ -4,3 +4,4 @@ __pycache__/
 .secrets/
 service-account*.json
 *firebase-adminsdk*.json
+scripts/
