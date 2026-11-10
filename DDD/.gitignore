@@ -6,3 +6,4 @@ service-account*.json
 *firebase-adminsdk*.json
 scripts/
 postman/
+tests/
