@@ -1,277 +1,162 @@
-# Redux TODO Frontend
+# TODO App Frontend
 
-This is the React frontend for the DDD/onion TODO application. It uses Redux
-Toolkit for shared state and communicates with the Python backend through HTTP.
-The frontend never accesses Firebase or Firestore directly.
+This React application is the user interface for the Python TODO API in `DDD/`.
+It uses Redux Toolkit for shared application state. The browser does not connect
+directly to MongoDB, PostgreSQL, or Firestore; it sends HTTP requests to the
+backend.
 
-## Technology
+## What the app can do
 
-- React and Vite
-- Redux Toolkit
-- React Redux
-- Firebase ID-token authentication through the backend
+- Register and log in with an email and password.
+- Sign in with Google.
+- Create, list, rename, complete, and delete the signed-in user's tasks.
+- Show which database the backend is currently using.
+- Switch between light and dark themes.
 
 ## Run locally
 
-Start the Python API on `http://127.0.0.1:8000`. Set
-`BACKEND_PROXY_TARGET` in `frontend/.env` if it runs at another address; copy
-the value from `.env.example` for the default local setup. Then run:
+Start the backend first, then configure and start the frontend:
 
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`.
+Open the URL printed by Vite (normally `http://127.0.0.1:5173`). Vite forwards
+`/auth`, `/tasks`, and `/runtime` to the Python API. Set
+`BACKEND_PROXY_TARGET` in `frontend/.env` if the API is listening somewhere
+else. The default is `http://127.0.0.1:8000`.
 
-Vite proxies `/auth` and `/tasks` requests to the Python server during local
-development. This proxy target is server-side Vite configuration and is not
-exposed to browser code.
+### Google sign-in configuration
+
+Create a Google OAuth client of type **Web application**. For local development,
+add the frontend origin you use in the browser as an authorized JavaScript
+origin, for example `http://127.0.0.1:5173`. Put the same client ID in both
+`frontend/.env` and `DDD/.env`:
+
+```env
+# frontend/.env
+VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+
+# DDD/.env
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+```
+
+The client ID is public configuration, not a client secret. The backend uses it
+to verify that a Google ID token was issued for this application. For local
+work, Google Audience can remain External/Testing; publishing in production
+requires a public homepage and privacy policy on a domain you control.
+
+## Redux state and local component state
+
+The store is created in `src/store/store.js` and registers three reducers:
+
+```js
+{
+  auth: { mode, session, isSubmitting, error },
+  tasks: { items, isLoading, isCreating, busyTaskId, error },
+  ui: { theme, activeDatabase }
+}
+```
+
+Shared application data, such as the session and saved tasks, lives in Redux.
+Short-lived form values, such as the email, password, and draft task title, stay
+in their React components with `useState`. The Redux store is memory-only, so
+refreshing the page clears the session and task state.
+
+## Google authentication flow
+
+```text
+GoogleSignInButton.jsx gets a Google ID token
+        |
+        v
+AuthForm.jsx -> App.jsx dispatches authenticateWithGoogle(token)
+        |
+        v
+authSlice.js -> api/client.js -> POST /auth/google
+        |
+        v
+Python verifies Google's token, finds/creates the database user,
+and returns the app's own JWT session
+        |
+        v
+Redux stores the app session; later task calls use the app JWT
+```
+
+These are two different tokens with different jobs:
+
+- **Google ID token:** proves the Google identity to the backend during sign-in.
+- **App JWT:** issued by the backend after verification and sent with protected
+  task requests as `Authorization: Bearer <token>`.
+
+The frontend does not use Firebase Authentication. Firebase Admin is used by
+the backend only when Firestore is the selected database.
+
+## Redux request flow
+
+```text
+User action -> React component -> App dispatches thunk
+            -> thunk calls api/client.js -> backend response
+            -> slice handles pending/fulfilled/rejected
+            -> useSelector reads updated state -> React re-renders
+```
+
+`createAsyncThunk` makes `pending`, `fulfilled`, and `rejected` actions.
+`extraReducers` handles those actions and updates loading, data, and error
+state. The task thunks use `getState()` to read the current app JWT rather than
+passing it through component props. `loadTasks` also accepts an abort signal so
+the `App.jsx` effect can cancel an outdated request.
+
+`unwrap()` in `App.jsx` turns a dispatched task thunk into a normal Promise,
+letting a form clear or close only after a successful request. Synchronous
+theme changes use a normal slice action and do not call the API.
+
+## API calls made by this frontend
+
+| Request | Purpose |
+| --- | --- |
+| `POST /auth/register` | Register with email and password |
+| `POST /auth/login` | Log in with email and password |
+| `POST /auth/google` | Exchange a Google ID token for an app session |
+| `GET /runtime` | Read the backend's active database for the indicator |
+| `GET /tasks` | Load the signed-in user's tasks |
+| `POST /tasks` | Create a task |
+| `PATCH /tasks/{id}` | Rename an owned task |
+| `POST /tasks/{id}/complete` | Complete an owned task |
+| `DELETE /tasks/{id}` | Delete an owned task |
+
+The backend supplies the owner identity from the verified JWT. The frontend
+does not submit an `owner_id` for task operations.
 
 ## Important files
 
 ```text
 src/
-├── main.jsx                    Provides the Redux store to React
-├── App.jsx                     Connects Redux state to the interface
-├── api/client.js               Sends HTTP requests to the backend
-├── store/store.js              Creates and configures the Redux store
+├── main.jsx                       Mounts React and provides the Redux store
+├── App.jsx                        Connects Redux state and callbacks to the UI
+├── api/client.js                  Sends HTTP requests to the Python API
+├── store/store.js                 Configures Redux and DevTools action sanitizing
 ├── features/
-│   ├── auth/authSlice.js       Authentication state and async workflow
-│   ├── tasks/tasksSlice.js     Task state, CRUD thunks, and selectors
-│   └── ui/uiSlice.js           Synchronous theme state
+│   ├── auth/authSlice.js           Auth thunks, session state, and selectors
+│   ├── tasks/tasksSlice.js         Task thunks, task state, and selectors
+│   └── ui/uiSlice.js               Theme and active-database state
 └── components/
-    ├── AuthForm.jsx            Login and registration form
-    ├── AppHeader.jsx           Account, theme, and logout controls
-    ├── TaskForm.jsx            New-task form
-    ├── TaskList.jsx            Task collection
-    └── TaskItem.jsx            One task and its actions
+    ├── AuthForm.jsx                Email/password form and Google button placement
+    ├── GoogleSignInButton.jsx      Loads Google Identity Services and gets ID token
+    ├── DatabaseIndicator.jsx       Shows the backend-selected database
+    ├── AppHeader.jsx               Shows account, theme, and logout controls
+    ├── TaskForm.jsx                Creates a task
+    ├── TaskList.jsx                Renders the task collection
+    └── TaskItem.jsx                Renders one task and its actions
 ```
-
-## Redux state
-
-The store registers three slice reducers:
-
-```js
-{
-  auth: {
-    mode: 'login',
-    session: null,
-    isSubmitting: false,
-    error: ''
-  },
-  tasks: {
-    items: [],
-    isLoading: false,
-    isCreating: false,
-    busyTaskId: null,
-    error: ''
-  },
-  ui: {
-    theme: 'light'
-  }
-}
-```
-
-Shared or saved application data belongs in Redux. Temporary input stays in
-local React state:
-
-```text
-Redux                     Local useState
-------                    --------------
-Authenticated session     Email and password being typed
-Saved tasks               New task title being typed
-Loading and errors        Edit mode and draft title
-Theme
-```
-
-## Main Redux concepts
-
-| Concept | Purpose in this project |
-| --- | --- |
-| `Provider` | Makes the store available to React components. |
-| `configureStore` | Combines the three reducers and includes thunk middleware. |
-| `createSlice` | Groups a feature's state, reducers, actions, and selectors. |
-| `createAsyncThunk` | Runs an API workflow and generates lifecycle actions. |
-| `dispatch` | Sends a synchronous action or async thunk to Redux. |
-| `getState` | Reads current shared state from inside a thunk. |
-| `extraReducers` | Handles actions generated by async thunks. |
-| Selector | Reads one specific value from the root state. |
-| `useSelector` | Subscribes a component to a selected value. |
-| `unwrap` | Converts a thunk result into normal Promise success or failure. |
-
-## General data flow
-
-```text
-User event
-    |
-    v
-React component calls a callback
-    |
-    v
-App dispatches an action or thunk
-    |
-    v
-Redux middleware runs async work when needed
-    |
-    v
-Reducer updates Redux state
-    |
-    v
-useSelector detects the selected change
-    |
-    v
-React re-renders the interface
-```
-
-## Async thunk lifecycle
-
-`createAsyncThunk` automatically creates three actions:
-
-```text
-pending    Request started
-fulfilled  Request succeeded
-rejected   Request failed
-```
-
-The auth and task slices handle these actions with `extraReducers`:
-
-```text
-dispatch(asyncThunk(input))
-          |
-          +--> pending --> set loading state
-          |
-          +--> call client.js --> Python API
-                                  |
-                                  +--> fulfilled --> save returned data
-                                  |
-                                  +--> rejected --> save error message
-```
-
-## Complete create-task flow
-
-1. The user submits a title in `TaskForm.jsx`.
-2. `TaskForm` calls the `onCreate(title)` prop.
-3. `App.jsx` creates `createTask(title)` and dispatches it.
-4. Thunk middleware runs the async thunk.
-5. `createTask.pending` sets `isCreating` to `true`.
-6. The thunk reads the ID token with `getState()`.
-7. The thunk calls `createTask()` from `api/client.js`.
-8. The client sends `POST /tasks` with the token and title.
-9. The backend verifies the user, creates the task, and returns it.
-10. Redux dispatches `createTask.fulfilled` with the task in `action.payload`.
-11. The fulfilled reducer adds the task to `state.tasks.items`.
-12. `useSelector(selectTasks)` receives the new array.
-13. React re-renders `TaskList`, which displays the new task.
-
-```text
-TaskForm
-   |
-   v
-App.handleCreate
-   |
-   v
-dispatch(createTask(title))
-   |
-   v
-createTask.pending
-   |
-   v
-client.js --> POST /tasks --> Python backend --> Firestore
-   |
-   v
-createTask.fulfilled
-   |
-   v
-tasks reducer adds action.payload
-   |
-   v
-selectTasks --> useSelector --> React render
-```
-
-If the request fails, `rejectWithValue` places a readable message in the
-rejected action. The reducer saves that message, and `App` displays it.
-
-## Authentication flow
-
-`authenticate(credentials)` uses `getState().auth.mode` to choose login or
-registration:
-
-```text
-mode = login       --> POST /auth/login
-mode = register    --> POST /auth/register
-```
-
-On success, Redux stores only the email and ID token. The password is not
-stored in Redux state, and `store.js` redacts it from Redux DevTools actions.
-
-When the session token appears, an effect in `App.jsx` dispatches
-`loadTasks()`. The effect aborts an outdated request if the session changes or
-the component is removed.
-
-## Task thunks
-
-| Thunk | Input | Result used by the reducer |
-| --- | --- | --- |
-| `loadTasks()` | None | Array of owned tasks |
-| `createTask(title)` | Task title | Created task |
-| `completeTask(id)` | Task ID | Updated task |
-| `renameTask({ id, title })` | Task ID and title | Updated task |
-| `deleteTask(id)` | Task ID | Deleted task ID |
-
-Each task thunk reads the authentication token with `getState()` so components
-only provide data related to the user's action.
-
-## Synchronous theme flow
-
-Theme switching does not require an API request:
-
-```text
-AppHeader dispatches themeToggled()
-    --> ui reducer changes state.ui.theme
-    --> useSelector receives the new theme
-    --> App effect updates the HTML data-theme attribute
-    --> CSS applies the selected theme
-```
-
-This demonstrates the difference between the two Redux paths:
-
-```text
-Synchronous:  dispatch --> reducer --> state --> UI
-Asynchronous: dispatch --> thunk --> API --> reducer --> state --> UI
-```
-
-## API routes used
-
-| Request | Purpose |
-| --- | --- |
-| `POST /auth/register` | Create an account |
-| `POST /auth/login` | Start a session |
-| `GET /tasks` | Load the user's tasks |
-| `POST /tasks` | Create a task |
-| `PATCH /tasks/{id}` | Rename a task |
-| `POST /tasks/{id}/complete` | Complete a task |
-| `DELETE /tasks/{id}` | Delete a task |
-
-Protected task requests send the ID token in the `Authorization` header. Task
-ownership and domain rules remain the responsibility of the Python backend.
-
-## Useful behavior to remember
-
-- Redux Toolkit uses Immer, so reducer mutation-style syntax still produces
-  immutable state updates.
-- `busyTaskId` identifies the task currently being updated.
-- Loaded tasks keep the order returned by the backend; newly created tasks are appended.
-- `unwrap()` lets forms clear or close only after a successful task request.
-- The Redux store is currently memory-only, so refreshing clears the session,
-  tasks, and selected theme.
-- React Strict Mode may start and cancel an effect twice during development.
 
 ## Commands
 
 ```bash
 npm run dev      # Start the Vite development server
-npm run build    # Create a production build
-npm run preview  # Preview the production build
+npm run lint     # Check frontend code with ESLint
+npm run build    # Create a production build in dist/
+npm run preview  # Preview the production build locally
 ```
