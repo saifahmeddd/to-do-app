@@ -109,6 +109,26 @@ p {
   margin-top: 1.5rem;
 }
 
+.auth-divider {
+  margin: 1.25rem 0 0.9rem;
+  color: #697386;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.google-sign-in {
+  display: grid;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.google-sign-in-note {
+  margin: 0;
+  color: #697386;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 /* Buttons and reusable interaction styles */
 .primary,
 .secondary,

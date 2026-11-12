@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   authenticate,
+  authenticateWithGoogle,
   loggedOut,
   modeChanged,
   selectAuthError,
@@ -77,6 +78,7 @@ export default function App() {
   }, [dispatch, accessToken]);
 
   const handleAuthentication = credentials => dispatch(authenticate(credentials));
+  const handleGoogleAuthentication = idToken => dispatch(authenticateWithGoogle(idToken));
   const handleModeChange = mode => dispatch(modeChanged(mode));
 
   function handleLogout() {
@@ -108,6 +110,7 @@ export default function App() {
           error={authError}
           activeDatabase={activeDatabase}
           onSubmit={handleAuthentication}
+          onGoogleSignIn={handleGoogleAuthentication}
           onModeChange={handleModeChange}
         />
       </main>

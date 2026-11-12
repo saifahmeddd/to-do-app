@@ -9,6 +9,9 @@ from application.services.task_service import TaskService
 from domain.domain_services.task_ordering import TaskOrdering
 from infrastructure.config.settings import Settings
 from infrastructure.authentication.argon2_password_hasher import Argon2PasswordHasher
+from infrastructure.authentication.google_identity_token_verifier import (
+    GoogleIdentityTokenVerifier,
+)
 from infrastructure.authentication.jwt_token_service import JwtTokenService
 from infrastructure.firebase.client import create_firestore_client
 from infrastructure.messaging.log_event_publisher import LogEventPublisher
@@ -61,6 +64,7 @@ def build_routes(
         Argon2PasswordHasher(),
         token_service,
         SystemClock(),
+        GoogleIdentityTokenVerifier(settings.google_client_id),
     )
     auth_routes = AuthRoutes(AuthController(auth_service))
     return ApiRoutes(auth_routes, task_routes, settings.task_database)

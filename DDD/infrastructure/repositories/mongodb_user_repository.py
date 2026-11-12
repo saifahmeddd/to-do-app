@@ -15,6 +15,11 @@ class MongoUserRepository:
 
         self.client = MongoClient(uri, tz_aware=True)
         self.collection = self.client[database_name]["users"]
+        self.collection.create_index(
+            "google_subject",
+            unique=True,
+            partialFilterExpression={"google_subject": {"$type": "string"}},
+        )
 
     def create_user(
         self,
@@ -49,6 +54,39 @@ class MongoUserRepository:
             user_id=document["user_id"],
             email=document["email"],
             password_hash=document["password_hash"],
+        )
+
+    def create_google_user(
+        self, email: str, email_key: str, google_subject: str, created_at: datetime
+    ) -> UserCredentialDTO:
+        from pymongo.errors import DuplicateKeyError
+
+        user = UserCredentialDTO(str(uuid4()), email, None)
+        try:
+            self.collection.insert_one(
+                {
+                    "_id": email_key,
+                    "user_id": user.user_id,
+                    "email": email,
+                    "email_key": email_key,
+                    "google_subject": google_subject,
+                    "password_hash": None,
+                    "created_at": created_at,
+                    "last_login_at": created_at,
+                }
+            )
+        except DuplicateKeyError as exc:
+            raise UserAlreadyExists from exc
+        return user
+
+    def get_by_google_subject(self, subject: str) -> UserCredentialDTO | None:
+        document = self.collection.find_one({"google_subject": subject})
+        if document is None:
+            return None
+        return UserCredentialDTO(
+            user_id=document["user_id"],
+            email=document["email"],
+            password_hash=document.get("password_hash"),
         )
 
     def record_login(self, email_key: str, logged_in_at: datetime) -> None:

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { login, register } from '../../api/client.js';
+import { login, loginWithGoogle, register } from '../../api/client.js';
 
 const initialState = {
   mode: 'login',
@@ -35,6 +35,17 @@ export const authenticate = createAsyncThunk(
   },
 );
 
+export const authenticateWithGoogle = createAsyncThunk(
+  'auth/authenticateWithGoogle',
+  async (idToken, { rejectWithValue }) => {
+    try {
+      return await loginWithGoogle(idToken);
+    } catch (error) {
+      return rejectWithValue(errorMessage(error));
+    }
+  },
+);
+
 // createSlice groups auth state and reducers while generating matching action creators.
 const authSlice = createSlice({
   name: 'auth',
@@ -61,6 +72,23 @@ const authSlice = createSlice({
         state.session = action.payload;
       })
       .addCase(authenticate.rejected, (state, action) => {
+        state.isSubmitting = false;
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(authenticateWithGoogle.pending, state => {
+        state.isSubmitting = true;
+        state.error = '';
+      })
+      .addCase(authenticateWithGoogle.fulfilled, (state, action) => {
+        state.isSubmitting = false;
+        state.session = {
+          user_id: action.payload.user_id,
+          email: action.payload.email,
+          database: action.payload.database,
+          access_token: action.payload.access_token,
+        };
+      })
+      .addCase(authenticateWithGoogle.rejected, (state, action) => {
         state.isSubmitting = false;
         state.error = action.payload || action.error.message;
       });

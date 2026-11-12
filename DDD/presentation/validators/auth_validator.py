@@ -3,6 +3,16 @@
 from presentation.validators.task_validator import InvalidRequest
 
 
+def validate_google_token(body: object) -> str:
+    """Accept only the Google ID token needed by the sign-in use case."""
+    if not isinstance(body, dict) or set(body) != {"id_token"}:
+        raise InvalidRequest("Body must contain only id_token.")
+    token = body["id_token"]
+    if not isinstance(token, str) or not token or len(token) > 16_384:
+        raise InvalidRequest("A valid Google ID token is required.")
+    return token
+
+
 def validate_credentials(body: object) -> tuple[str, str]:
     """Return normalized credentials from an exact email/password JSON object."""
     if not isinstance(body, dict):

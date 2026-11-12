@@ -25,6 +25,7 @@ class Settings:
     postgres_dsn: str | None = None
     jwt_secret: str = ""
     jwt_expires_minutes: int = 60
+    google_client_id: str | None = None
     host: str = "127.0.0.1"
     port: int = 8000
 
@@ -52,6 +53,7 @@ class Settings:
             postgres_dsn=os.getenv("POSTGRES_DSN") or None,
             jwt_secret=os.getenv("JWT_SECRET", ""),
             jwt_expires_minutes=int(os.getenv("JWT_EXPIRES_MINUTES", "60")),
+            google_client_id=os.getenv("GOOGLE_CLIENT_ID") or None,
             host=os.getenv("TODO_HOST", "127.0.0.1"),
             port=int(os.getenv("TODO_PORT", "8000")),
         )

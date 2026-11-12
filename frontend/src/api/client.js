@@ -45,6 +45,10 @@ export function login(credentials) {
   return request('/auth/login', { method: 'POST', body: credentials });
 }
 
+export function loginWithGoogle(idToken) {
+  return request('/auth/google', { method: 'POST', body: { id_token: idToken } });
+}
+
 export function getRuntime() {
   return request('/runtime');
 }

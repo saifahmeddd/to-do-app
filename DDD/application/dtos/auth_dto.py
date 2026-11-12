@@ -20,6 +20,14 @@ class LoginUserDTO:
 
 
 @dataclass(frozen=True)
+class GoogleIdentityDTO:
+    """Identity details returned only after Google's ID token is verified."""
+
+    subject: str
+    email: str
+
+
+@dataclass(frozen=True)
 class AuthSessionDTO:
     """Backend-issued access token returned after a successful login."""
 
@@ -37,4 +45,4 @@ class UserCredentialDTO:
 
     user_id: str
     email: str
-    password_hash: str
+    password_hash: str | None

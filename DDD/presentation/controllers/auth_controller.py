@@ -2,7 +2,10 @@
 
 from application.dtos.auth_dto import LoginUserDTO, RegisterUserDTO
 from application.services.auth_service import AuthService
-from presentation.validators.auth_validator import validate_credentials
+from presentation.validators.auth_validator import (
+    validate_credentials,
+    validate_google_token,
+)
 from presentation.views.auth_view import auth_session_view
 
 
@@ -24,4 +27,9 @@ class AuthController:
         email, password = validate_credentials(body)
         command = LoginUserDTO(email=email, password=password)
         session = self.service.login(command)
+        return 200, auth_session_view(session)
+
+    def login_with_google(self, body: object) -> tuple[int, dict]:
+        id_token = validate_google_token(body)
+        session = self.service.login_with_google(id_token)
         return 200, auth_session_view(session)
