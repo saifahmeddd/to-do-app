@@ -4,8 +4,8 @@ This folder contains the Python backend for the TODO application. It uses
 Domain-Driven Design (DDD) to keep task rules in a domain model and Onion
 Architecture to keep HTTP and database details outside the application core.
 
-The backend supports email/password authentication, Google sign-in, and task
-CRUD. It issues its own JWT after successful authentication. Firebase
+The backend supports email/password authentication, Google and GitHub sign-in,
+and task CRUD. It issues its own JWT after successful authentication. Firebase
 Authentication is not used; Firebase Admin is used to connect to Firestore
 when Firestore is selected.
 
@@ -56,9 +56,22 @@ The Google ID token proves identity to the backend during sign-in. The backend
 then issues a separate app JWT. The frontend sends the app JWT with protected
 task requests; it does not send the Google token for task access.
 
+### GitHub sign-in
+
+GitHub uses the OAuth authorization-code flow. The frontend generates and
+checks a one-time `state` value, then sends the short-lived authorization code
+to the backend. The backend exchanges it using the GitHub client secret,
+retrieves the GitHub account and its primary verified email, and issues this
+app's JWT. GitHub access tokens are not stored. Only the `read:user` and
+`user:email` scopes are requested. GitHub identity subjects are persisted
+separately from Google subjects; matching email addresses are not linked
+automatically.
+
 The Google identity is looked up by Google's stable `sub` value. If an email
 already belongs to a password account, the app does not automatically link the
-accounts. Account linking is not implemented.
+accounts. GitHub identities are stored separately by their immutable numeric
+GitHub user ID, and matching email addresses are also not linked automatically.
+Account linking is not implemented.
 
 ### Protected requests
 
@@ -114,7 +127,7 @@ It is public and does not authenticate a user.
   `GOOGLE_APPLICATION_CREDENTIALS`, or the local ignored service-account file
   `DDD/.secrets/firebase-service-account.json`.
 - **MongoDB:** uses `MONGODB_URI` and `MONGODB_DATABASE` (default `todo`). The
-  user adapter creates a unique index for Google subjects.
+  user adapter creates unique indexes for Google and GitHub subjects.
 - **PostgreSQL:** uses `POSTGRES_DSN`. The user adapter creates/updates the
   `users` table for password and Google accounts; Google-only users have no
   password hash. If it finds the old Firebase-shaped `users` table, startup
@@ -131,6 +144,9 @@ account JSON files.
 | `JWT_SECRET` | App JWT signing key; must be at least 32 bytes |
 | `JWT_EXPIRES_MINUTES` | App JWT lifetime; defaults to 60 |
 | `GOOGLE_CLIENT_ID` | Google Web client ID used to verify Google ID tokens |
+| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App secret; backend only |
+| `GITHUB_REDIRECT_URI` | Exact frontend callback URL registered in the GitHub OAuth App |
 | `TASK_DATABASE` | `firestore`, `mongodb`, or `postgres`; defaults to Firestore |
 | `MONGODB_URI` | MongoDB connection string when MongoDB is selected |
 | `MONGODB_DATABASE` | MongoDB database name; defaults to `todo` |
@@ -147,6 +163,14 @@ account JSON files.
 For Google sign-in, `GOOGLE_CLIENT_ID` must match `VITE_GOOGLE_CLIENT_ID` in
 `frontend/.env`. The ID is public configuration; never place a Google client
 secret in the frontend.
+
+For GitHub sign-in, create an OAuth App and configure its callback URL to match
+`GITHUB_REDIRECT_URI` and `VITE_GITHUB_REDIRECT_URI` exactly. Put the client ID
+in `DDD/.env` and `frontend/.env`; put the client secret only in `DDD/.env`.
+For local development the callback can be `http://127.0.0.1:5173/`. Set the
+GitHub authorization callback URL to that exact URL. Restart the backend and
+Vite after changing environment variables. Production needs its own callback
+URL and matching frontend/backend settings.
 
 Set the connection variables for the chosen adapter. For example:
 
@@ -204,6 +228,7 @@ a different address.
 | `POST /auth/register` | Public | Register with email and password | `201` session |
 | `POST /auth/login` | Public | Log in with email and password | `200` session |
 | `POST /auth/google` | Public | Verify Google ID token and start app session | `200` session |
+| `POST /auth/github` | Public | Exchange GitHub OAuth code and start app session | `200` session |
 | `GET /runtime` | Public | Return active database name | `200` |
 | `GET /tasks` | App JWT | List the caller's tasks | `200` |
 | `POST /tasks` | App JWT | Create a task owned by the caller | `201` |

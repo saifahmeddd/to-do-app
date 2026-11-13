@@ -26,6 +26,9 @@ class Settings:
     jwt_secret: str = ""
     jwt_expires_minutes: int = 60
     google_client_id: str | None = None
+    github_client_id: str | None = None
+    github_client_secret: str | None = None
+    github_redirect_uri: str | None = None
     resend_api_key: str | None = None
     reminder_from_email: str | None = None
     welcome_from_email: str = "onboarding@resend.dev"
@@ -58,6 +61,9 @@ class Settings:
             jwt_secret=os.getenv("JWT_SECRET", ""),
             jwt_expires_minutes=int(os.getenv("JWT_EXPIRES_MINUTES", "60")),
             google_client_id=os.getenv("GOOGLE_CLIENT_ID") or None,
+            github_client_id=os.getenv("GITHUB_CLIENT_ID") or None,
+            github_client_secret=os.getenv("GITHUB_CLIENT_SECRET") or None,
+            github_redirect_uri=os.getenv("GITHUB_REDIRECT_URI") or None,
             resend_api_key=os.getenv("RESEND_API_KEY") or None,
             reminder_from_email=os.getenv("REMINDER_FROM_EMAIL") or None,
             welcome_from_email=os.getenv("WELCOME_FROM_EMAIL", "onboarding@resend.dev"),

@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   authenticate,
   authenticateWithGoogle,
+  authenticateWithGitHub,
+  githubCallbackFailed,
   loggedOut,
   modeChanged,
   selectAuthError,
@@ -57,6 +59,27 @@ export default function App() {
 
   useEffect(() => {
     dispatch(loadActiveDatabase());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const callback = new URLSearchParams(window.location.search);
+    const code = callback.get('code');
+    const returnedState = callback.get('state');
+    const providerError = callback.get('error');
+    if (!code && !providerError) return;
+
+    const expectedState = window.sessionStorage.getItem('github_oauth_state');
+    window.sessionStorage.removeItem('github_oauth_state');
+    window.history.replaceState({}, document.title, window.location.pathname);
+    if (!expectedState || returnedState !== expectedState) {
+      dispatch(githubCallbackFailed('GitHub sign-in could not be verified. Please try again.'));
+      return;
+    }
+    if (providerError) {
+      dispatch(githubCallbackFailed('GitHub sign-in was cancelled or denied.'));
+      return;
+    }
+    dispatch(authenticateWithGitHub(code));
   }, [dispatch]);
 
   // side effect to set the theme on the document element

@@ -12,6 +12,7 @@ from infrastructure.authentication.argon2_password_hasher import Argon2PasswordH
 from infrastructure.authentication.google_identity_token_verifier import (
     GoogleIdentityTokenVerifier,
 )
+from infrastructure.authentication.github_oauth_identity_verifier import GitHubOAuthIdentityVerifier
 from infrastructure.authentication.jwt_token_service import JwtTokenService
 from infrastructure.firebase.client import create_firestore_client
 from infrastructure.messaging.log_event_publisher import LogEventPublisher
@@ -68,6 +69,13 @@ def build_routes(
         GoogleIdentityTokenVerifier(settings.google_client_id),
         ResendEmailSender(settings.resend_api_key, settings.welcome_from_email)
         if settings.resend_api_key
+        else None,
+        GitHubOAuthIdentityVerifier(
+            settings.github_client_id,
+            settings.github_client_secret,
+            settings.github_redirect_uri,
+        )
+        if settings.github_client_id and settings.github_client_secret and settings.github_redirect_uri
         else None,
     )
     auth_routes = AuthRoutes(AuthController(auth_service))

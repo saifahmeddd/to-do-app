@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { login, loginWithGoogle, register } from '../../api/client.js';
+import { login, loginWithGitHub, loginWithGoogle, register } from '../../api/client.js';
 
 const initialState = {
   mode: 'login',
@@ -46,6 +46,17 @@ export const authenticateWithGoogle = createAsyncThunk(
   },
 );
 
+export const authenticateWithGitHub = createAsyncThunk(
+  'auth/authenticateWithGitHub',
+  async (code, { rejectWithValue }) => {
+    try {
+      return await loginWithGitHub(code);
+    } catch (error) {
+      return rejectWithValue(errorMessage(error));
+    }
+  },
+);
+
 // createSlice groups auth state and reducers while generating matching action creators.
 const authSlice = createSlice({
   name: 'auth',
@@ -58,6 +69,9 @@ const authSlice = createSlice({
     loggedOut(state) {
       state.session = null;
       state.error = '';
+    },
+    githubCallbackFailed(state, action) {
+      state.error = action.payload;
     },
   },
   // extraReducers handles lifecycle actions created outside the slice's normal reducers.
@@ -92,10 +106,28 @@ const authSlice = createSlice({
         state.isSubmitting = false;
         state.error = action.payload || action.error.message;
       });
+    builder
+      .addCase(authenticateWithGitHub.pending, state => {
+        state.isSubmitting = true;
+        state.error = '';
+      })
+      .addCase(authenticateWithGitHub.fulfilled, (state, action) => {
+        state.isSubmitting = false;
+        state.session = {
+          user_id: action.payload.user_id,
+          email: action.payload.email,
+          database: action.payload.database,
+          access_token: action.payload.access_token,
+        };
+      })
+      .addCase(authenticateWithGitHub.rejected, (state, action) => {
+        state.isSubmitting = false;
+        state.error = action.payload || action.error.message;
+      });
   },
 });
 
-export const { modeChanged, loggedOut } = authSlice.actions;
+export const { modeChanged, loggedOut, githubCallbackFailed } = authSlice.actions;
 
 // Selectors provide focused reads from the combined Redux state.
 export const selectAuthMode = state => state.auth.mode;

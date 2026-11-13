@@ -59,8 +59,15 @@ class PostgresUserRepository:
                 "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_subject TEXT"
             )
             connection.execute(
+                "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS github_subject TEXT"
+            )
+            connection.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS users_google_subject_idx "
                 "ON public.users (google_subject) WHERE google_subject IS NOT NULL"
+            )
+            connection.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS users_github_subject_idx "
+                "ON public.users (github_subject) WHERE github_subject IS NOT NULL"
             )
 
     def create_user(
@@ -146,6 +153,34 @@ class PostgresUserRepository:
         if row is None:
             return None
         return UserCredentialDTO(user_id=row[0], email=row[1], password_hash=row[2])
+
+    def create_github_user(
+        self, email: str, email_key: str, github_subject: str, created_at: datetime
+    ) -> UserCredentialDTO:
+        import psycopg
+
+        user = UserCredentialDTO(str(uuid4()), email, None)
+        try:
+            with psycopg.connect(self.dsn) as connection:
+                connection.execute(
+                    "INSERT INTO public.users "
+                    "(id, email, email_key, password_hash, github_subject, created_at, last_login_at) "
+                    "VALUES (%s, %s, %s, NULL, %s, %s, %s)",
+                    (user.user_id, email, email_key, github_subject, created_at, created_at),
+                )
+        except psycopg.errors.UniqueViolation as exc:
+            raise UserAlreadyExists from exc
+        return user
+
+    def get_by_github_subject(self, subject: str) -> UserCredentialDTO | None:
+        import psycopg
+
+        with psycopg.connect(self.dsn) as connection:
+            row = connection.execute(
+                "SELECT id, email, password_hash FROM public.users WHERE github_subject = %s",
+                (subject,),
+            ).fetchone()
+        return UserCredentialDTO(row[0], row[1], row[2]) if row else None
 
     def record_login(self, email_key: str, logged_in_at: datetime) -> None:
         import psycopg

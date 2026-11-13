@@ -11,6 +11,7 @@ from application.dtos.auth_dto import (
 from application.exceptions.identity_errors import LoginFailed, RegistrationFailed
 from application.exceptions.user_already_exists import UserAlreadyExists
 from application.interfaces.google_identity_verifier import GoogleIdentityVerifier
+from application.interfaces.github_identity_verifier import GitHubIdentityVerifier
 from application.interfaces.password_hasher import PasswordHasher
 from application.interfaces.runtime import Clock
 from application.interfaces.token_issuer import TokenIssuer
@@ -29,6 +30,7 @@ class AuthService:
         clock: Clock,
         google_identity: GoogleIdentityVerifier,
         welcome_email: WelcomeEmailSender | None = None,
+        github_identity: GitHubIdentityVerifier | None = None,
     ):
         self.users = users
         self.passwords = passwords
@@ -36,6 +38,7 @@ class AuthService:
         self.clock = clock
         self.google_identity = google_identity
         self.welcome_email = welcome_email
+        self.github_identity = github_identity
 
     def register(self, command: RegisterUserDTO) -> AuthSessionDTO:
         email = command.email.strip().casefold()
@@ -108,6 +111,35 @@ class AuthService:
                 logging.getLogger(__name__).error("Welcome email failed for a new account: %s", error)
         except Exception:
             logging.getLogger(__name__).exception("Welcome email failed for a new account.")
+
+    def login_with_github(self, authorization_code: str) -> AuthSessionDTO:
+        if self.github_identity is None:
+            raise LoginFailed("GitHub sign-in is not configured.")
+        identity = self.github_identity.verify(authorization_code)
+        email = identity.email.strip().casefold()
+        email_key = _email_key(email)
+        user = self.users.get_by_github_subject(identity.subject)
+        created_user = False
+        if user is None:
+            if self.users.get_by_email_key(email_key) is not None:
+                raise RegistrationFailed(
+                    "This email already belongs to another sign-in method. Accounts are not linked automatically."
+                )
+            try:
+                user = self.users.create_github_user(
+                    email, email_key, identity.subject, self.clock.now()
+                )
+                created_user = True
+            except UserAlreadyExists as exc:
+                user = self.users.get_by_github_subject(identity.subject)
+                if user is None:
+                    raise RegistrationFailed(
+                        "An account with this email already exists in this database."
+                    ) from exc
+        if created_user:
+            self._send_welcome_email(user.email)
+        self.users.record_login(_email_key(user.email), self.clock.now())
+        return self._session(user.user_id, user.email)
 
     def _session(self, user_id: str, email: str) -> AuthSessionDTO:
         return AuthSessionDTO(

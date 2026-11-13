@@ -28,6 +28,14 @@ class GoogleIdentityDTO:
 
 
 @dataclass(frozen=True)
+class GitHubIdentityDTO:
+    """Account identity resolved from GitHub's authenticated user API."""
+
+    subject: str
+    email: str
+
+
+@dataclass(frozen=True)
 class AuthSessionDTO:
     """Backend-issued access token returned after a successful login."""
 

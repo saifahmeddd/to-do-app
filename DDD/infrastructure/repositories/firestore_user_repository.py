@@ -87,6 +87,33 @@ class FirestoreUserRepository:
             )
         return None
 
+    def create_github_user(
+        self, email: str, email_key: str, github_subject: str, created_at: datetime
+    ) -> UserCredentialDTO:
+        user = UserCredentialDTO(str(uuid4()), email, None)
+        try:
+            self.collection.document(email_key).create({
+                "user_id": user.user_id,
+                "email": email,
+                "email_key": email_key,
+                "github_subject": github_subject,
+                "password_hash": None,
+                "created_at": created_at,
+                "last_login_at": created_at,
+            })
+        except AlreadyExists as exc:
+            raise UserAlreadyExists from exc
+        return user
+
+    def get_by_github_subject(self, subject: str) -> UserCredentialDTO | None:
+        matches = self.collection.where(
+            filter=FieldFilter("github_subject", "==", subject)
+        ).limit(1).stream()
+        for snapshot in matches:
+            data = snapshot.to_dict() or {}
+            return UserCredentialDTO(data["user_id"], data["email"], data.get("password_hash"))
+        return None
+
     def record_login(self, email_key: str, logged_in_at: datetime) -> None:
         reference = self.collection.document(email_key)
         snapshot = reference.get()

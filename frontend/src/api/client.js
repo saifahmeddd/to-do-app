@@ -49,6 +49,10 @@ export function loginWithGoogle(idToken) {
   return request('/auth/google', { method: 'POST', body: { id_token: idToken } });
 }
 
+export function loginWithGitHub(code) {
+  return request('/auth/github', { method: 'POST', body: { code } });
+}
+
 export function getRuntime() {
   return request('/runtime');
 }

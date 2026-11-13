@@ -10,6 +10,7 @@ from application.exceptions.identity_errors import (
     LoginFailed,
     RegistrationFailed,
 )
+from application.exceptions.identity_provider_error import IdentityProviderError
 from application.exceptions.task_not_found import TaskNotFound
 from application.interfaces.authentication import TokenVerifier
 from domain.exceptions.task_errors import InvalidTask
@@ -49,6 +50,8 @@ def make_server(
             except AuthenticationFailed as exc:
                 status, payload = 401, error_view(str(exc))
             except LoginFailed as exc:
+                status, payload = 401, error_view(str(exc))
+            except IdentityProviderError as exc:
                 status, payload = 401, error_view(str(exc))
             except RegistrationFailed as exc:
                 status, payload = 409, error_view(str(exc))

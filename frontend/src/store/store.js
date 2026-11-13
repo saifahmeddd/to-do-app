@@ -5,6 +5,12 @@ import uiReducer from '../features/ui/uiSlice.js';
 
 // Hide the submitted password from Redux DevTools without storing a modified action.
 function sanitizeAction(action) {
+  if (action.type.startsWith('auth/authenticateWithGoogle/') && action.meta?.arg) {
+    return { ...action, meta: { ...action.meta, arg: '[REDACTED]' } };
+  }
+  if (action.type.startsWith('auth/authenticateWithGitHub/') && action.meta?.arg) {
+    return { ...action, meta: { ...action.meta, arg: '[REDACTED]' } };
+  }
   if (!action.type.startsWith('auth/authenticate/') || !action.meta?.arg) {
     return action;
   }

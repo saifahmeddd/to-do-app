@@ -129,6 +129,33 @@ p {
   text-align: center;
 }
 
+.github-sign-in-button {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+  border: 1px solid #24292f;
+  border-radius: 0.4rem;
+  color: #ffffff;
+  background: #24292f;
+  font-weight: 650;
+}
+
+.github-sign-in-button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.github-sign-in-note {
+  margin: 0.65rem 0 0;
+  color: #697386;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
 /* Buttons and reusable interaction styles */
 .primary,
 .secondary,

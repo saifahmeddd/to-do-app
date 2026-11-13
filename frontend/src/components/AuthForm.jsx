@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import DatabaseIndicator from './DatabaseIndicator.jsx';
 import GoogleSignInButton from './GoogleSignInButton.jsx';
+import GitHubSignInButton from './GitHubSignInButton.jsx';
 
 export default function AuthForm({ mode, isSubmitting, error, activeDatabase, onSubmit, onGoogleSignIn, onModeChange }) {
   const [email, setEmail] = useState('');
@@ -59,6 +60,7 @@ export default function AuthForm({ mode, isSubmitting, error, activeDatabase, on
 
       <div className="auth-divider" aria-hidden="true">or continue with</div>
       <GoogleSignInButton onCredential={onGoogleSignIn} />
+      <GitHubSignInButton isSubmitting={isSubmitting} />
 
       <button
         className="text-button"

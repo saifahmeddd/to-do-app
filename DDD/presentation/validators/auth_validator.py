@@ -13,6 +13,15 @@ def validate_google_token(body: object) -> str:
     return token
 
 
+def validate_github_code(body: object) -> str:
+    if not isinstance(body, dict) or set(body) != {"code"}:
+        raise InvalidRequest("Body must contain only code.")
+    code = body["code"]
+    if not isinstance(code, str) or not code or len(code) > 2048:
+        raise InvalidRequest("A valid GitHub authorization code is required.")
+    return code
+
+
 def validate_credentials(body: object) -> tuple[str, str]:
     """Return normalized credentials from an exact email/password JSON object."""
     if not isinstance(body, dict):

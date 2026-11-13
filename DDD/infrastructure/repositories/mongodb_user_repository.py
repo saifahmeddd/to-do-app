@@ -20,6 +20,11 @@ class MongoUserRepository:
             unique=True,
             partialFilterExpression={"google_subject": {"$type": "string"}},
         )
+        self.collection.create_index(
+            "github_subject",
+            unique=True,
+            partialFilterExpression={"github_subject": {"$type": "string"}},
+        )
 
     def create_user(
         self,
@@ -88,6 +93,33 @@ class MongoUserRepository:
             email=document["email"],
             password_hash=document.get("password_hash"),
         )
+
+    def create_github_user(
+        self, email: str, email_key: str, github_subject: str, created_at: datetime
+    ) -> UserCredentialDTO:
+        from pymongo.errors import DuplicateKeyError
+
+        user = UserCredentialDTO(str(uuid4()), email, None)
+        try:
+            self.collection.insert_one({
+                "_id": email_key,
+                "user_id": user.user_id,
+                "email": email,
+                "email_key": email_key,
+                "github_subject": github_subject,
+                "password_hash": None,
+                "created_at": created_at,
+                "last_login_at": created_at,
+            })
+        except DuplicateKeyError as exc:
+            raise UserAlreadyExists from exc
+        return user
+
+    def get_by_github_subject(self, subject: str) -> UserCredentialDTO | None:
+        document = self.collection.find_one({"github_subject": subject})
+        if document is None:
+            return None
+        return UserCredentialDTO(document["user_id"], document["email"], document.get("password_hash"))
 
     def record_login(self, email_key: str, logged_in_at: datetime) -> None:
         self.collection.update_one(

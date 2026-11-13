@@ -9,6 +9,7 @@ backend.
 
 - Register and log in with an email and password.
 - Sign in with Google.
+- Sign in with GitHub.
 - Create, list, rename, complete, and delete the signed-in user's tasks.
 - Show which database the backend is currently using.
 - Switch between light and dark themes.
@@ -49,6 +50,16 @@ to verify that a Google ID token was issued for this application. For local
 work, Google Audience can remain External/Testing; publishing in production
 requires a public homepage and privacy policy on a domain you control.
 
+### GitHub sign-in configuration
+
+Create a GitHub OAuth App with its Authorization callback URL set to the exact
+frontend URL, such as `http://127.0.0.1:5173/`. Put its client ID in
+`VITE_GITHUB_CLIENT_ID` and `VITE_GITHUB_REDIRECT_URI` in `frontend/.env`.
+Put the same client ID, the client secret, and the exact redirect URI in
+`DDD/.env` as `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and
+`GITHUB_REDIRECT_URI`. Keep the secret only in the backend. Restart both
+servers after changing settings.
+
 ## Redux state and local component state
 
 The store is created in `src/store/store.js` and registers three reducers:
@@ -85,6 +96,11 @@ and returns the app's own JWT session
 Redux stores the app session; later task calls use the app JWT
 ```
 
+GitHub sign-in follows the same Redux session flow after authorization. The
+frontend redirects to GitHub with a random `state` value, checks that value on
+return, and posts the one-time authorization code to `POST /auth/github`. The
+backend exchanges the code and returns the app's JWT session.
+
 These are two different tokens with different jobs:
 
 - **Google ID token:** proves the Google identity to the backend during sign-in.
@@ -120,6 +136,7 @@ theme changes use a normal slice action and do not call the API.
 | `POST /auth/register` | Register with email and password |
 | `POST /auth/login` | Log in with email and password |
 | `POST /auth/google` | Exchange a Google ID token for an app session |
+| `POST /auth/github` | Exchange a GitHub authorization code for an app session |
 | `GET /runtime` | Read the backend's active database for the indicator |
 | `GET /tasks` | Load the signed-in user's tasks |
 | `POST /tasks` | Create a task |
