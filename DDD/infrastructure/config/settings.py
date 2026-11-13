@@ -26,6 +26,9 @@ class Settings:
     jwt_secret: str = ""
     jwt_expires_minutes: int = 60
     google_client_id: str | None = None
+    resend_api_key: str | None = None
+    reminder_from_email: str | None = None
+    reminder_timezone: str = "Asia/Karachi"
     host: str = "127.0.0.1"
     port: int = 8000
 
@@ -54,6 +57,9 @@ class Settings:
             jwt_secret=os.getenv("JWT_SECRET", ""),
             jwt_expires_minutes=int(os.getenv("JWT_EXPIRES_MINUTES", "60")),
             google_client_id=os.getenv("GOOGLE_CLIENT_ID") or None,
+            resend_api_key=os.getenv("RESEND_API_KEY") or None,
+            reminder_from_email=os.getenv("REMINDER_FROM_EMAIL") or None,
+            reminder_timezone=os.getenv("REMINDER_TIMEZONE", "Asia/Karachi"),
             host=os.getenv("TODO_HOST", "127.0.0.1"),
             port=int(os.getenv("TODO_PORT", "8000")),
         )

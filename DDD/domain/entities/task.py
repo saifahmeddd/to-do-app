@@ -16,8 +16,10 @@ class Task:
     id: TaskId
     title: TaskTitle
     created_at: datetime
+    submission_date: datetime | None = None
     completed_at: datetime | None = None
     owner_id: UserId | None = None
+    reminder_sent_for: datetime | None = None
 
     def complete(self, now: datetime) -> TaskCompleted | None:
         """Complete once and return the event created by the state change."""

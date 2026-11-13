@@ -155,3 +155,9 @@ class PostgresUserRepository:
                 "UPDATE public.users SET last_login_at = %s WHERE email_key = %s",
                 (logged_in_at, email_key),
             )
+
+    def get_by_user_id(self, user_id: str) -> UserCredentialDTO | None:
+        import psycopg
+        with psycopg.connect(self.dsn) as connection:
+            row = connection.execute("SELECT id, email, password_hash FROM public.users WHERE id = %s", (user_id,)).fetchone()
+        return UserCredentialDTO(*row) if row else None

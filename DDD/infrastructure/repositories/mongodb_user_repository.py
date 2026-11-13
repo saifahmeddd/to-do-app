@@ -94,3 +94,7 @@ class MongoUserRepository:
             {"_id": email_key},
             {"$set": {"last_login_at": logged_in_at}},
         )
+
+    def get_by_user_id(self, user_id: str) -> UserCredentialDTO | None:
+        document = self.collection.find_one({"user_id": user_id})
+        return UserCredentialDTO(user_id, document["email"], document.get("password_hash")) if document else None

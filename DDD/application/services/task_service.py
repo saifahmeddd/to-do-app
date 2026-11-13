@@ -1,6 +1,7 @@
 """Application service implementing authenticated task CRUD use cases."""
 
 from application.dtos.task_dto import CreateTaskDTO, TaskDTO, UpdateTaskDTO
+from datetime import date, datetime, time, timezone
 from application.exceptions.task_not_found import TaskNotFound
 from application.interfaces.runtime import Clock, EventPublisher, IdGenerator
 from application.interfaces.task_repository import TaskRepository
@@ -34,6 +35,7 @@ class TaskService:
             id=self.ids.new_id(),
             title=TaskTitle(command.title),
             created_at=self.clock.now(),
+            submission_date=(datetime.combine(date.fromisoformat(command.submission_date), time.min, timezone.utc) if command.submission_date else None),
             owner_id=owner_id,
         )
         self.repository.save(task)

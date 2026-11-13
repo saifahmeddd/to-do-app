@@ -20,6 +20,8 @@ class TaskDocument(TypedDict):
     title: str
     created_at: datetime
     completed_at: datetime | None
+    submission_date: datetime | None
+    reminder_sent_for: datetime | None
     owner_id: str | None
 
 
@@ -67,6 +69,12 @@ class FirestoreTaskRepository:
         reference.delete()
         return True
 
+    def due_for_reminder(self, start: datetime, end: datetime) -> list[Task]:
+        return [_to_entity(snapshot.id, snapshot.to_dict() or {}) for snapshot in self.collection.where(filter=FieldFilter("submission_date", ">=", start)).where(filter=FieldFilter("submission_date", "<", end)).stream()]
+
+    def mark_reminded(self, task_id: TaskId, reminder_date: datetime) -> None:
+        self.collection.document(task_id.value).update({"reminder_sent_for": reminder_date})
+
 
 def _to_document(task: Task) -> TaskDocument:
     """Serialize every task with the same fields, preserving unavailable values."""
@@ -74,6 +82,8 @@ def _to_document(task: Task) -> TaskDocument:
         "title": task.title.value,
         "created_at": task.created_at,
         "completed_at": task.completed_at,
+        "submission_date": task.submission_date,
+        "reminder_sent_for": task.reminder_sent_for,
         "owner_id": task.owner_id.value if task.owner_id else None,
     }
     return document
@@ -91,7 +101,15 @@ def _to_entity(document_id: str, data: Mapping[str, object]) -> Task:
             if completed_at is not None
             else None
         ),
+        submission_date=(
+            _as_datetime(data["submission_date"], "submission_date")
+            if data.get("submission_date") is not None else None
+        ),
         owner_id=UserId(data["owner_id"]),
+        reminder_sent_for=(
+            _as_datetime(data["reminder_sent_for"], "reminder_sent_for")
+            if data.get("reminder_sent_for") is not None else None
+        ),
     )
 
 

@@ -41,10 +41,10 @@ export const loadTasks = createAsyncThunk(
 
 export const createTask = createAsyncThunk(
   'tasks/createTask',
-  async (title, { getState, rejectWithValue }) => {
+  async ({ title, submissionDate }, { getState, rejectWithValue }) => {
     try {
       const token = getState().auth.session.access_token;
-      return await createTaskRequest(title, token);
+      return await createTaskRequest(title, submissionDate, token);
     } catch (error) {
       return rejectWithValue(errorMessage(error));
     }

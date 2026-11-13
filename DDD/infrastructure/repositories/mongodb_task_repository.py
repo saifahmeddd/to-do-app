@@ -42,6 +42,12 @@ class MongoTaskRepository:
         )
         return result.deleted_count == 1
 
+    def due_for_reminder(self, start: datetime, end: datetime) -> list[Task]:
+        return [_to_entity(row) for row in self.collection.find({"submission_date": {"$gte": start, "$lt": end}, "completed_at": None})]
+
+    def mark_reminded(self, task_id: TaskId, reminder_date: datetime) -> None:
+        self.collection.update_one({"_id": task_id.value}, {"$set": {"reminder_sent_for": reminder_date}})
+
 
 def _to_document(task: Task) -> dict:
     return {
@@ -49,6 +55,8 @@ def _to_document(task: Task) -> dict:
         "title": task.title.value,
         "created_at": task.created_at,
         "completed_at": task.completed_at,
+        "submission_date": task.submission_date,
+        "reminder_sent_for": task.reminder_sent_for,
         "owner_id": task.owner_id.value if task.owner_id else None,
     }
 
@@ -65,7 +73,15 @@ def _to_entity(document: Mapping[str, object]) -> Task:
             if completed_at is not None
             else None
         ),
+        submission_date=(
+            _as_datetime(document["submission_date"], "submission_date")
+            if document.get("submission_date") is not None else None
+        ),
         owner_id=UserId(owner_id) if owner_id is not None else None,
+        reminder_sent_for=(
+            _as_datetime(document["reminder_sent_for"], "reminder_sent_for")
+            if document.get("reminder_sent_for") is not None else None
+        ),
     )
 
 

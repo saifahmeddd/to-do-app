@@ -97,3 +97,10 @@ class FirestoreUserRepository:
         for match in matches:
             match.reference.update({"last_login_at": logged_in_at})
             return
+
+    def get_by_user_id(self, user_id: str) -> UserCredentialDTO | None:
+        matches = self.collection.where(filter=FieldFilter("user_id", "==", user_id)).limit(1).stream()
+        for match in matches:
+            data = match.to_dict() or {}
+            return UserCredentialDTO(user_id, data["email"], data.get("password_hash"))
+        return None

@@ -30,6 +30,9 @@ flowchart LR
   verification, JWT, the system clock, UUIDs, and logging.
 - **`main.py` and `bootstrap.py`** load configuration and connect the concrete
   infrastructure adapters to application services.
+- **Task reminders** use the same task and user repositories. A daily external
+  cron invokes `scripts/send_task_reminders.py`; the script sends due-tomorrow
+  mail through the Resend adapter and records successful sends.
 
 ## Authentication
 
@@ -137,6 +140,8 @@ account JSON files.
 | `FIREBASE_USER_COLLECTION` | Firestore users collection; defaults to `users` |
 | `FIREBASE_TASK_COLLECTION` | Firestore tasks collection; defaults to `tasks` |
 | `TODO_HOST`, `TODO_PORT` | API bind address; defaults to `127.0.0.1:8000` |
+| `RESEND_API_KEY` | Server-side Resend API key used by the reminder runner |
+| `REMINDER_FROM_EMAIL` | Verified sender address configured in Resend |
 
 For Google sign-in, `GOOGLE_CLIENT_ID` must match `VITE_GOOGLE_CLIENT_ID` in
 `frontend/.env`. The ID is public configuration; never place a Google client
@@ -215,7 +220,26 @@ Create and rename accept a JSON body containing only a title:
 The public task response contains `id`, `title`, `created_at`, and
 `completed_at`. It does not expose `owner_id`.
 
-The domain trims task titles and requires 1–120 characters.
+The domain trims task titles and requires 1–120 characters. Task creation also
+accepts an optional `submission_date` in `YYYY-MM-DD` format. Tasks with a date
+receive one email reminder the day before, unless completed.
+
+### Resend reminders
+
+Set `RESEND_API_KEY` and `REMINDER_FROM_EMAIL` in `DDD/.env`. Verify the sender
+domain/address in Resend first. Install backend dependencies, then schedule this
+command once each morning on a machine that can reach the configured database:
+
+```cron
+0 9 * * * cd /path/to/PRAC/DDD && .venv/bin/python scripts/send_task_reminders.py >> reminders.log 2>&1
+```
+
+The runner uses UTC dates; schedule it for 09:00 UTC (14:00 Pakistan time).
+It sends only for incomplete tasks with a submission date tomorrow. A sent
+marker is saved after Resend accepts each email, so subsequent runs skip it.
+If a send succeeds but the process stops before saving the marker, the next run
+may send that email again; Resend delivery and the database cannot share an
+atomic transaction.
 
 ## One create-task request from start to finish
 

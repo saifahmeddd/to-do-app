@@ -10,6 +10,7 @@ class CreateTaskDTO:
     """Input required by the create-task use case."""
 
     title: str
+    submission_date: str | None = None
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,7 @@ class TaskDTO:
     title: str
     created_at: str
     completed_at: str | None
+    submission_date: str | None
 
     @classmethod
     def from_entity(cls, task: Task) -> "TaskDTO":
@@ -38,4 +40,5 @@ class TaskDTO:
             completed_at=(
                 task.completed_at.isoformat() if task.completed_at else None
             ),
+            submission_date=(task.submission_date.date().isoformat() if task.submission_date else None),
         )

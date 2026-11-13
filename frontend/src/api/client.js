@@ -57,11 +57,11 @@ export function listTasks(token, signal) {
   return request('/tasks', { token, signal });
 }
 
-export function createTask(title, token) {
+export function createTask(title, submissionDate, token) {
   return request('/tasks', {
     method: 'POST',
     token,
-    body: { title },
+    body: { title, ...(submissionDate && { submission_date: submissionDate }) },
   });
 }
 

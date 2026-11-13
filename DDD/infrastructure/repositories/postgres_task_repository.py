@@ -24,10 +24,14 @@ class PostgresTaskRepository:
                     title TEXT NOT NULL,
                     created_at TIMESTAMPTZ NOT NULL,
                     completed_at TIMESTAMPTZ,
+                    submission_date TIMESTAMPTZ,
+                    reminder_sent_for TIMESTAMPTZ,
                     owner_id TEXT
                 )
                 """
             )
+            connection.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS submission_date TIMESTAMPTZ")
+            connection.execute("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_sent_for TIMESTAMPTZ")
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS tasks_owner_id_idx ON tasks (owner_id)"
             )
@@ -38,12 +42,14 @@ class PostgresTaskRepository:
         with psycopg.connect(self.dsn) as connection:
             connection.execute(
                 """
-                INSERT INTO tasks (id, title, created_at, completed_at, owner_id)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO tasks (id, title, created_at, completed_at, submission_date, reminder_sent_for, owner_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO UPDATE SET
                     title = EXCLUDED.title,
                     created_at = EXCLUDED.created_at,
                     completed_at = EXCLUDED.completed_at,
+                    submission_date = EXCLUDED.submission_date,
+                    reminder_sent_for = EXCLUDED.reminder_sent_for,
                     owner_id = EXCLUDED.owner_id
                 """,
                 (
@@ -51,13 +57,15 @@ class PostgresTaskRepository:
                     task.title.value,
                     task.created_at,
                     task.completed_at,
+                    task.submission_date,
+                    task.reminder_sent_for,
                     task.owner_id.value if task.owner_id else None,
                 ),
             )
 
     def get(self, task_id: TaskId, owner_id: UserId) -> Task | None:
         row = self._fetch_one(
-            "SELECT id, title, created_at, completed_at, owner_id "
+            "SELECT id, title, created_at, completed_at, submission_date, reminder_sent_for, owner_id "
             "FROM tasks WHERE id = %s AND owner_id = %s",
             (task_id.value, owner_id.value),
         )
@@ -68,7 +76,7 @@ class PostgresTaskRepository:
 
         with psycopg.connect(self.dsn) as connection:
             rows = connection.execute(
-                "SELECT id, title, created_at, completed_at, owner_id "
+                "SELECT id, title, created_at, completed_at, submission_date, reminder_sent_for, owner_id "
                 "FROM tasks WHERE owner_id = %s",
                 (owner_id.value,),
             ).fetchall()
@@ -84,6 +92,17 @@ class PostgresTaskRepository:
             )
             return cursor.rowcount == 1
 
+    def due_for_reminder(self, start: datetime, end: datetime) -> list[Task]:
+        import psycopg
+        with psycopg.connect(self.dsn) as connection:
+            rows = connection.execute("SELECT id, title, created_at, completed_at, submission_date, reminder_sent_for, owner_id FROM tasks WHERE submission_date >= %s AND submission_date < %s AND completed_at IS NULL", (start, end)).fetchall()
+        return [_to_entity(row) for row in rows]
+
+    def mark_reminded(self, task_id: TaskId, reminder_date: datetime) -> None:
+        import psycopg
+        with psycopg.connect(self.dsn) as connection:
+            connection.execute("UPDATE tasks SET reminder_sent_for = %s WHERE id = %s", (reminder_date, task_id.value))
+
     def _fetch_one(self, query: str, parameters: tuple[str, ...]):
         import psycopg
 
@@ -92,7 +111,7 @@ class PostgresTaskRepository:
 
 
 def _to_entity(row: tuple) -> Task:
-    task_id, title, created_at, completed_at, owner_id = row
+    task_id, title, created_at, completed_at, submission_date, reminder_sent_for, owner_id = row
     return Task(
         id=TaskId(task_id),
         title=TaskTitle(title),
@@ -102,6 +121,8 @@ def _to_entity(row: tuple) -> Task:
             if completed_at is not None
             else None
         ),
+        submission_date=submission_date,
+        reminder_sent_for=reminder_sent_for,
         owner_id=UserId(owner_id) if owner_id is not None else None,
     )
 

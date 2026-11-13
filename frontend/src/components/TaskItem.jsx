@@ -53,6 +53,7 @@ export default function TaskItem({ task, isBusy, onComplete, onRename, onDelete 
             <p className="task-date">
               Created {new Date(task.created_at).toLocaleString()}
             </p>
+            {task.submission_date && <p className="task-date">Due {new Date(`${task.submission_date}T00:00:00`).toLocaleDateString()}</p>}
           </div>
         )}
       </div>
