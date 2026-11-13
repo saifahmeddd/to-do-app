@@ -22,6 +22,8 @@ class TaskDocument(TypedDict):
     completed_at: datetime | None
     submission_date: datetime | None
     reminder_sent_for: datetime | None
+    submission_at: datetime | None
+    scheduled_reminder_id: str | None
     owner_id: str | None
 
 
@@ -84,6 +86,8 @@ def _to_document(task: Task) -> TaskDocument:
         "completed_at": task.completed_at,
         "submission_date": task.submission_date,
         "reminder_sent_for": task.reminder_sent_for,
+        "submission_at": task.submission_at,
+        "scheduled_reminder_id": task.scheduled_reminder_id,
         "owner_id": task.owner_id.value if task.owner_id else None,
     }
     return document
@@ -110,6 +114,11 @@ def _to_entity(document_id: str, data: Mapping[str, object]) -> Task:
             _as_datetime(data["reminder_sent_for"], "reminder_sent_for")
             if data.get("reminder_sent_for") is not None else None
         ),
+        submission_at=(
+            _as_datetime(data["submission_at"], "submission_at")
+            if data.get("submission_at") is not None else None
+        ),
+        scheduled_reminder_id=data.get("scheduled_reminder_id"),
     )
 
 

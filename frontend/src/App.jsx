@@ -119,9 +119,9 @@ export default function App() {
     }
   }
 
-  const handleCreate = (title, submissionDate) => runTaskAction(createTask({ title, submissionDate }));
+  const handleCreate = (title, submissionAt) => runTaskAction(createTask({ title, submissionAt }));
   const handleComplete = id => runTaskAction(completeTask(id));
-  const handleRename = (id, title) => runTaskAction(renameTask({ id, title }));
+  const handleRename = (id, title, submissionAt) => runTaskAction(renameTask({ id, title, submissionAt }));
   const handleDelete = id => runTaskAction(deleteTask(id));
 
   if (!session) {

@@ -57,6 +57,8 @@ def _to_document(task: Task) -> dict:
         "completed_at": task.completed_at,
         "submission_date": task.submission_date,
         "reminder_sent_for": task.reminder_sent_for,
+        "submission_at": task.submission_at,
+        "scheduled_reminder_id": task.scheduled_reminder_id,
         "owner_id": task.owner_id.value if task.owner_id else None,
     }
 
@@ -82,6 +84,11 @@ def _to_entity(document: Mapping[str, object]) -> Task:
             _as_datetime(document["reminder_sent_for"], "reminder_sent_for")
             if document.get("reminder_sent_for") is not None else None
         ),
+        submission_at=(
+            _as_datetime(document["submission_at"], "submission_at")
+            if document.get("submission_at") is not None else None
+        ),
+        scheduled_reminder_id=document.get("scheduled_reminder_id"),
     )
 
 

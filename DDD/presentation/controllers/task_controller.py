@@ -3,7 +3,7 @@
 from application.dtos.task_dto import CreateTaskDTO, UpdateTaskDTO
 from application.interfaces.authentication import AuthenticatedUser
 from application.services.task_service import TaskService
-from presentation.validators.task_validator import validate_create, validate_update, validate_submission_date
+from presentation.validators.task_validator import validate_create, validate_update, validate_submission_at, validate_submission_date
 from presentation.views.task_view import deleted_view, task_view, tasks_view
 
 
@@ -16,7 +16,7 @@ class TaskController:
     def create(self, body: object, user: AuthenticatedUser) -> tuple[int, dict]:
         """Validate create input and return the created task representation."""
         title = validate_create(body)
-        command = CreateTaskDTO(title, validate_submission_date(body))
+        command = CreateTaskDTO(title, validate_submission_date(body), validate_submission_at(body))
         created_task = self.service.create(command, user.id)
         return 201, task_view(created_task)
 
@@ -33,7 +33,7 @@ class TaskController:
     ) -> tuple[int, dict]:
         """Validate and rename one task selected by its URL identifier."""
         title = validate_update(body)
-        command = UpdateTaskDTO(title)
+        command = UpdateTaskDTO(title, validate_submission_at(body), "submission_at" in body)
         updated_task = self.service.update(task_id, command, user.id)
         return 200, task_view(updated_task)
 

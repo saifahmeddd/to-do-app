@@ -61,19 +61,19 @@ export function listTasks(token, signal) {
   return request('/tasks', { token, signal });
 }
 
-export function createTask(title, submissionDate, token) {
+export function createTask(title, submissionAt, token) {
   return request('/tasks', {
     method: 'POST',
     token,
-    body: { title, ...(submissionDate && { submission_date: submissionDate }) },
+    body: { title, ...(submissionAt && { submission_at: submissionAt }) },
   });
 }
 
-export function renameTask(id, title, token) {
+export function renameTask(id, title, submissionAt, token) {
   return request(`/tasks/${id}`, {
     method: 'PATCH',
     token,
-    body: { title },
+    body: { title, submission_at: submissionAt || null },
   });
 }
 

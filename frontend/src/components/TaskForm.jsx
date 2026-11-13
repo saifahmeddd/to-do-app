@@ -3,7 +3,7 @@ import { useState } from 'react';
 export default function TaskForm({ isSubmitting, onCreate }) {
   // Keep unfinished input local because no other component needs this draft value.
   const [title, setTitle] = useState('');
-  const [submissionDate, setSubmissionDate] = useState('');
+  const [submissionAt, setSubmissionAt] = useState('');
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -12,8 +12,8 @@ export default function TaskForm({ isSubmitting, onCreate }) {
     if (!cleanTitle) return;
 
     // Wait for Redux to confirm success before clearing what the user typed.
-    const created = await onCreate(cleanTitle, submissionDate || null);
-    if (created) { setTitle(''); setSubmissionDate(''); }
+    const created = await onCreate(cleanTitle, submissionAt ? new Date(submissionAt).toISOString() : null);
+    if (created) { setTitle(''); setSubmissionAt(''); }
   }
 
   return (
@@ -28,8 +28,9 @@ export default function TaskForm({ isSubmitting, onCreate }) {
         maxLength={120}
         disabled={isSubmitting}
       />
-      <label htmlFor="new-task-date">Submission date</label>
-      <input id="new-task-date" type="date" value={submissionDate} onChange={event => setSubmissionDate(event.target.value)} disabled={isSubmitting} />
+      <label htmlFor="new-task-date">Due date and time (optional)</label>
+      <input id="new-task-date" type="datetime-local" value={submissionAt} onChange={event => setSubmissionAt(event.target.value)} disabled={isSubmitting} />
+      <small>We’ll email you when it’s due. Schedule within the next 30 days.</small>
       <button className="primary" disabled={isSubmitting || !title.trim()}>
         {isSubmitting ? 'Adding…' : 'Add task'}
       </button>

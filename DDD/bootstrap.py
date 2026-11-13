@@ -46,16 +46,26 @@ def build_routes(
             settings.firebase_credentials_path,
         )
     repository = build_task_repository(settings, firestore_client)
+    user_repository = build_user_repository(settings, firestore_client)
+    reminder_scheduler = (
+        ResendEmailSender(
+            settings.resend_api_key,
+            settings.reminder_from_email or settings.welcome_from_email,
+        )
+        if settings.resend_api_key
+        else None
+    )
     service = TaskService(
         repository,
         SystemClock(),
         UUIDGenerator(),
         LogEventPublisher(),
         TaskOrdering(),
+        user_repository,
+        reminder_scheduler,
     )
     task_routes = TaskRoutes(TaskController(service))
 
-    user_repository = build_user_repository(settings, firestore_client)
     token_service = jwt_service or JwtTokenService(
         settings.jwt_secret,
         settings.task_database,

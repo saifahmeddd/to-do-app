@@ -41,10 +41,10 @@ export const loadTasks = createAsyncThunk(
 
 export const createTask = createAsyncThunk(
   'tasks/createTask',
-  async ({ title, submissionDate }, { getState, rejectWithValue }) => {
+  async ({ title, submissionAt }, { getState, rejectWithValue }) => {
     try {
       const token = getState().auth.session.access_token;
-      return await createTaskRequest(title, submissionDate, token);
+      return await createTaskRequest(title, submissionAt, token);
     } catch (error) {
       return rejectWithValue(errorMessage(error));
     }
@@ -65,10 +65,10 @@ export const completeTask = createAsyncThunk(
 
 export const renameTask = createAsyncThunk(
   'tasks/renameTask',
-  async ({ id, title }, { getState, rejectWithValue }) => {
+  async ({ id, title, submissionAt }, { getState, rejectWithValue }) => {
     try {
       const token = getState().auth.session.access_token;
-      return await renameTaskRequest(id, title, token);
+      return await renameTaskRequest(id, title, submissionAt, token);
     } catch (error) {
       return rejectWithValue(errorMessage(error));
     }

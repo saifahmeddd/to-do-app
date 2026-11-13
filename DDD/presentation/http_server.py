@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlsplit
 
 from application.exceptions.authentication_failed import AuthenticationFailed
+from application.exceptions.reminder_scheduling_unavailable import ReminderSchedulingUnavailable
 from application.exceptions.identity_errors import (
     LoginFailed,
     RegistrationFailed,
@@ -64,6 +65,8 @@ def make_server(
                 status, payload = 400, error_view(str(exc))
             except TaskNotFound as exc:
                 status, payload = 404, error_view(str(exc))
+            except ReminderSchedulingUnavailable as exc:
+                status, payload = 503, error_view(str(exc))
             except Exception:
                 # Log the detailed failure server-side without exposing it to clients.
                 logging.getLogger(__name__).exception(

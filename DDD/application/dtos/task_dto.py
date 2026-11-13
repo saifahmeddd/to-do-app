@@ -11,6 +11,7 @@ class CreateTaskDTO:
 
     title: str
     submission_date: str | None = None
+    submission_at: str | None = None
 
 
 @dataclass(frozen=True)
@@ -18,6 +19,8 @@ class UpdateTaskDTO:
     """Editable data accepted by the update-task use case."""
 
     title: str
+    submission_at: str | None = None
+    submission_at_provided: bool = False
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,7 @@ class TaskDTO:
     created_at: str
     completed_at: str | None
     submission_date: str | None
+    submission_at: str | None
 
     @classmethod
     def from_entity(cls, task: Task) -> "TaskDTO":
@@ -41,4 +45,5 @@ class TaskDTO:
                 task.completed_at.isoformat() if task.completed_at else None
             ),
             submission_date=(task.submission_date.date().isoformat() if task.submission_date else None),
+            submission_at=task.submission_at.isoformat() if task.submission_at else None,
         )

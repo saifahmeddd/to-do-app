@@ -243,12 +243,20 @@ Create and rename accept a JSON body containing only a title:
 { "title": "Learn DDD" }
 ```
 
-The public task response contains `id`, `title`, `created_at`, and
-`completed_at`. It does not expose `owner_id`.
+The public task response contains `id`, `title`, `created_at`, `completed_at`,
+and its optional due date fields. It does not expose `owner_id`.
 
 The domain trims task titles and requires 1–120 characters. Task creation also
-accepts an optional `submission_date` in `YYYY-MM-DD` format. Tasks with a date
-receive one email reminder the day before, unless completed.
+accepts a due date and time for an exact-time email reminder. Legacy clients may
+also provide `submission_date` in `YYYY-MM-DD` format; those date-only tasks use
+the separate one-day-prior reminder runner.
+
+These timed reminders are scheduled directly through Resend for the chosen
+instant; the browser converts its local time to UTC. Resend currently accepts
+individual scheduled emails up to 30 days ahead. Editing or completing a task
+replaces or cancels its scheduled reminder. Timed reminders require
+`RESEND_API_KEY` and `REMINDER_FROM_EMAIL` (or the configured welcome sender
+fallback).
 
 ### Resend reminders
 

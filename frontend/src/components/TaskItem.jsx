@@ -3,6 +3,7 @@ import { useState } from 'react';
 export default function TaskItem({ task, isBusy, onComplete, onRename, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(task.title);
+  const [draftSubmissionAt, setDraftSubmissionAt] = useState(toLocalDateTime(task.submission_at));
 
   const isCompleted = Boolean(task.completed_at);
 
@@ -10,18 +11,20 @@ export default function TaskItem({ task, isBusy, onComplete, onRename, onDelete 
     event.preventDefault();
     const cleanTitle = draftTitle.trim();
 
-    if (!cleanTitle || cleanTitle === task.title) {
+    const submissionAt = draftSubmissionAt ? new Date(draftSubmissionAt).toISOString() : null;
+    if (!cleanTitle || (cleanTitle === task.title && sameInstant(submissionAt, task.submission_at))) {
       setDraftTitle(task.title);
       setIsEditing(false);
       return;
     }
 
-    const renamed = await onRename(task.id, cleanTitle);
+    const renamed = await onRename(task.id, cleanTitle, submissionAt);
     if (renamed) setIsEditing(false);
   }
 
   function cancelEditing() {
     setDraftTitle(task.title);
+    setDraftSubmissionAt(toLocalDateTime(task.submission_at));
     setIsEditing(false);
   }
 
@@ -42,6 +45,8 @@ export default function TaskItem({ task, isBusy, onComplete, onRename, onDelete 
               autoFocus
               disabled={isBusy}
             />
+            <label className="sr-only" htmlFor={`edit-date-${task.id}`}>Due date and time</label>
+            <input id={`edit-date-${task.id}`} type="datetime-local" value={draftSubmissionAt} onChange={event => setDraftSubmissionAt(event.target.value)} disabled={isBusy} />
             <button className="small" disabled={isBusy || !draftTitle.trim()}>Save</button>
             <button className="small secondary" type="button" onClick={cancelEditing}>
               Cancel
@@ -53,7 +58,8 @@ export default function TaskItem({ task, isBusy, onComplete, onRename, onDelete 
             <p className="task-date">
               Created {new Date(task.created_at).toLocaleString()}
             </p>
-            {task.submission_date && <p className="task-date">Due {new Date(`${task.submission_date}T00:00:00`).toLocaleDateString()}</p>}
+            {task.submission_at && <p className="task-date">Due {new Date(task.submission_at).toLocaleString()}</p>}
+            {!task.submission_at && task.submission_date && <p className="task-date">Due {new Date(`${task.submission_date}T00:00:00`).toLocaleDateString()}</p>}
           </div>
         )}
       </div>
@@ -75,4 +81,16 @@ export default function TaskItem({ task, isBusy, onComplete, onRename, onDelete 
       )}
     </li>
   );
+}
+
+function toLocalDateTime(isoValue) {
+  if (!isoValue) return '';
+  const date = new Date(isoValue);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function sameInstant(first, second) {
+  if (!first || !second) return first === second;
+  return new Date(first).getTime() === new Date(second).getTime();
 }
