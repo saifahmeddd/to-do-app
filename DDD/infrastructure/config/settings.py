@@ -28,6 +28,7 @@ class Settings:
     google_client_id: str | None = None
     resend_api_key: str | None = None
     reminder_from_email: str | None = None
+    welcome_from_email: str = "onboarding@resend.dev"
     reminder_timezone: str = "Asia/Karachi"
     host: str = "127.0.0.1"
     port: int = 8000
@@ -59,6 +60,7 @@ class Settings:
             google_client_id=os.getenv("GOOGLE_CLIENT_ID") or None,
             resend_api_key=os.getenv("RESEND_API_KEY") or None,
             reminder_from_email=os.getenv("REMINDER_FROM_EMAIL") or None,
+            welcome_from_email=os.getenv("WELCOME_FROM_EMAIL", "onboarding@resend.dev"),
             reminder_timezone=os.getenv("REMINDER_TIMEZONE", "Asia/Karachi"),
             host=os.getenv("TODO_HOST", "127.0.0.1"),
             port=int(os.getenv("TODO_PORT", "8000")),

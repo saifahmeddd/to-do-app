@@ -14,3 +14,11 @@ class ResendEmailSender:
             "subject": f"Task due tomorrow: {title}",
             "text": f"Reminder: {title} is due on {submission_date}.",
         })
+
+    def send_welcome_email(self, recipient: str) -> object:
+        return self.resend.Emails.send({
+            "from": self.from_email,
+            "to": [recipient],
+            "subject": "Welcome!!",
+            "text": "Welcome! Your account is ready. You can now create tasks and set submission dates to receive reminders.",
+        })

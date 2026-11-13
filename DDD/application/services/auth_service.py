@@ -1,6 +1,7 @@
 """Application workflows for local password authentication and JWT sessions."""
 
 from hashlib import sha256
+import logging
 
 from application.dtos.auth_dto import (
     AuthSessionDTO,
@@ -14,6 +15,7 @@ from application.interfaces.password_hasher import PasswordHasher
 from application.interfaces.runtime import Clock
 from application.interfaces.token_issuer import TokenIssuer
 from application.interfaces.user_repository import UserRepository
+from application.interfaces.welcome_email_sender import WelcomeEmailSender
 
 
 class AuthService:
@@ -26,12 +28,14 @@ class AuthService:
         tokens: TokenIssuer,
         clock: Clock,
         google_identity: GoogleIdentityVerifier,
+        welcome_email: WelcomeEmailSender | None = None,
     ):
         self.users = users
         self.passwords = passwords
         self.tokens = tokens
         self.clock = clock
         self.google_identity = google_identity
+        self.welcome_email = welcome_email
 
     def register(self, command: RegisterUserDTO) -> AuthSessionDTO:
         email = command.email.strip().casefold()
@@ -47,6 +51,7 @@ class AuthService:
             raise RegistrationFailed(
                 "An account with this email already exists in this database."
             ) from exc
+        self._send_welcome_email(user.email)
         return self._session(user.user_id, user.email)
 
     def login(self, command: LoginUserDTO) -> AuthSessionDTO:
@@ -67,6 +72,7 @@ class AuthService:
         email_key = _email_key(email)
 
         user = self.users.get_by_google_subject(identity.subject)
+        created_user = False
         if user is None:
             # Matching emails alone do not prove the user intended to link sign-in methods.
             if self.users.get_by_email_key(email_key) is not None:
@@ -77,6 +83,7 @@ class AuthService:
                 user = self.users.create_google_user(
                     email, email_key, identity.subject, self.clock.now()
                 )
+                created_user = True
             except UserAlreadyExists as exc:
                 # A simultaneous first sign-in may have created this Google user.
                 user = self.users.get_by_google_subject(identity.subject)
@@ -85,8 +92,22 @@ class AuthService:
                         "An account with this email already exists in this database."
                     ) from exc
 
+        if created_user:
+            self._send_welcome_email(user.email)
+
         self.users.record_login(_email_key(user.email), self.clock.now())
         return self._session(user.user_id, user.email)
+
+    def _send_welcome_email(self, recipient: str) -> None:
+        if self.welcome_email is None:
+            return
+        try:
+            response = self.welcome_email.send_welcome_email(recipient)
+            error = response.get("message") if isinstance(response, dict) and response.get("name") else None
+            if error:
+                logging.getLogger(__name__).error("Welcome email failed for a new account: %s", error)
+        except Exception:
+            logging.getLogger(__name__).exception("Welcome email failed for a new account.")
 
     def _session(self, user_id: str, email: str) -> AuthSessionDTO:
         return AuthSessionDTO(

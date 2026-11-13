@@ -15,6 +15,7 @@ from infrastructure.authentication.google_identity_token_verifier import (
 from infrastructure.authentication.jwt_token_service import JwtTokenService
 from infrastructure.firebase.client import create_firestore_client
 from infrastructure.messaging.log_event_publisher import LogEventPublisher
+from infrastructure.messaging.resend_email_sender import ResendEmailSender
 from infrastructure.providers.system_runtime import SystemClock, UUIDGenerator
 from infrastructure.repositories.firestore_task_repository import FirestoreTaskRepository
 from infrastructure.repositories.firestore_user_repository import FirestoreUserRepository
@@ -65,6 +66,9 @@ def build_routes(
         token_service,
         SystemClock(),
         GoogleIdentityTokenVerifier(settings.google_client_id),
+        ResendEmailSender(settings.resend_api_key, settings.welcome_from_email)
+        if settings.resend_api_key
+        else None,
     )
     auth_routes = AuthRoutes(AuthController(auth_service))
     return ApiRoutes(auth_routes, task_routes, settings.task_database)

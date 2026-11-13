@@ -142,6 +142,7 @@ account JSON files.
 | `TODO_HOST`, `TODO_PORT` | API bind address; defaults to `127.0.0.1:8000` |
 | `RESEND_API_KEY` | Server-side Resend API key used by the reminder runner |
 | `REMINDER_FROM_EMAIL` | Verified sender address configured in Resend |
+| `WELCOME_FROM_EMAIL` | Sender for first-account welcome email; defaults to `onboarding@resend.dev` |
 
 For Google sign-in, `GOOGLE_CLIENT_ID` must match `VITE_GOOGLE_CLIENT_ID` in
 `frontend/.env`. The ID is public configuration; never place a Google client
@@ -240,6 +241,13 @@ marker is saved after Resend accepts each email, so subsequent runs skip it.
 If a send succeeds but the process stops before saving the marker, the next run
 may send that email again; Resend delivery and the database cannot share an
 atomic transaction.
+
+New password registrations and first-time Google account creation also send a
+welcome email using `RESEND_API_KEY` and `WELCOME_FROM_EMAIL`. Existing users
+who sign in do not receive another welcome email. Welcome-email delivery
+failure is logged and does not prevent sign-in or registration. Resend's
+`onboarding@resend.dev` sender is intended for testing; use a verified domain
+sender for general recipient delivery.
 
 ## One create-task request from start to finish
 
